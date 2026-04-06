@@ -1,0 +1,21 @@
+# Node
+node_modules/
+build/
+dist/
+.env
+
+# Spring Boot
+target/
+*.jar
+*.war
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+# OS Files
+.DS_Store
+Thumbs.db
