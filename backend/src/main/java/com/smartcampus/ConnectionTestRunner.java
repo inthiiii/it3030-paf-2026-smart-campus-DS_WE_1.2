@@ -1,4 +1,4 @@
-package com.example.demo; // Make sure this matches your actual package name!
+package com.smartcampus; 
 
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.data.annotation.Id;
