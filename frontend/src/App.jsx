@@ -1,120 +1,81 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useState, useEffect } from 'react'
+import axios from 'axios'
+import { MapPin, Users, MonitorPlay, ServerCrash } from 'lucide-react'
+import './index.css'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [resources, setResources] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  // Fetch data from Spring Boot when the component loads
+  useEffect(() => {
+    const fetchResources = async () => {
+      try {
+        // Calling your Spring Boot GET endpoint!
+        const response = await axios.get('http://localhost:8080/api/resources')
+        setResources(response.data)
+        setLoading(false)
+      } catch (error) {
+        console.error('Error fetching resources:', error)
+        setLoading(false)
+      }
+    }
+    fetchResources()
+  }, [])
+
+  if (loading) return <h2>Loading Smart Campus Resources...</h2>
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div className="dashboard">
+      <div className="header">
+        <h1>Smart Campus Operations Hub</h1>
+        <p>Facilities & Assets Catalogue</p>
+      </div>
 
-      <div className="ticks"></div>
+      <div className="grid">
+        {resources.map((resource) => (
+          <div key={resource.id} className="card">
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <h2 style={{ margin: '0 0 0.5rem 0' }}>{resource.name}</h2>
+              <span className={`status-badge status-${resource.status}`}>
+                {resource.status.replace(/_/g, ' ')}
+              </span>
+            </div>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+            <div className="icon-text">
+              <MonitorPlay size={18} />
+              <span>{resource.type.replace(/_/g, ' ')}</span>
+            </div>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+            <div className="icon-text">
+              <Users size={18} />
+              <span>Capacity: {resource.capacity} people</span>
+            </div>
+
+            <div className="icon-text">
+              <MapPin size={18} />
+              <span>{resource.location}</span>
+            </div>
+
+            <div className="features">
+              {resource.features.map((feature, index) => (
+                <span key={index} className="feature-tag">{feature}</span>
+              ))}
+            </div>
+
+          </div>
+        ))}
+      </div>
+      
+      {resources.length === 0 && (
+        <div style={{ textAlign: 'center', padding: '3rem', color: '#71717a' }}>
+          <ServerCrash size={48} style={{ margin: '0 auto', marginBottom: '1rem' }} />
+          <h3>No resources found</h3>
+          <p>Go to Postman and POST a new resource to see it here!</p>
+        </div>
+      )}
+    </div>
   )
 }
 
