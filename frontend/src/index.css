@@ -70,3 +70,73 @@ body {
   font-size: 0.8rem;
   color: #3f3f46;
 }
+
+/* Navigation Bar */
+nav {
+  background: white;
+  padding: 1rem 2rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+nav a {
+  text-decoration: none;
+  color: #52525b;
+  font-weight: 600;
+  transition: color 0.2s;
+}
+nav a:hover { color: #18181b; }
+
+/* Admin Form Styles */
+.form-container {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
+}
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+label { font-size: 0.875rem; font-weight: 600; color: #3f3f46; }
+input, select {
+  padding: 0.5rem;
+  border: 1px solid #d4d4d8;
+  border-radius: 6px;
+  font-family: inherit;
+  background-color: #fafafa;
+}
+input:focus, select:focus {
+  outline: 2px solid #18181b;
+  border-color: transparent;
+}
+
+/* Buttons */
+.btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.btn:hover { opacity: 0.8; }
+.btn-primary { background: #18181b; color: white; width: 100%; margin-top: 1rem;}
+.btn-danger { background: #ef4444; color: white; font-size: 0.8rem;}
+.btn-edit { background: #3b82f6; color: white; font-size: 0.8rem;}
+.admin-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f4f4f5;
+}

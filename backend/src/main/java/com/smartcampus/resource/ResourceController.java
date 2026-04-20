@@ -28,6 +28,14 @@ public class ResourceController {
         return ResponseEntity.ok(service.getAllResources()); // Returns 200 OK
     }
 
+    // NEW: Semantic AI Search Endpoint
+    // Example URL: GET /api/resources/search?q=quiet room with projector
+    @GetMapping("/search")
+    public ResponseEntity<List<Resource>> searchResources(@RequestParam("q") String query) {
+        List<Resource> results = service.semanticSearch(query);
+        return ResponseEntity.ok(results);
+    }
+
     // 3. GET: Retrieve a single resource by ID
     @GetMapping("/{id}")
     public ResponseEntity<Resource> getResourceById(@PathVariable String id) {
