@@ -1,8 +1,11 @@
+import os
 from fastapi import FastAPI
 from pydantic import BaseModel
 from sentence_transformers import SentenceTransformer
 from pinecone import Pinecone
 from dotenv import load_dotenv
+
+import os
 
 # Load variables from .env file
 load_dotenv()
