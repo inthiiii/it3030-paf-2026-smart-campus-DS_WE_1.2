@@ -1,16 +1,23 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
+import { Users, Server, ShieldAlert } from 'lucide-react'
 
 export default function AdminDashboard() {
+  const [activeTab, setActiveTab] = useState('resources') // 'resources' or 'users'
+  
+  // Resource State
   const [resources, setResources] = useState([])
-  // Form State
   const [formData, setFormData] = useState({
     name: '', type: 'LECTURE_HALL', capacity: 0, location: '', status: 'ACTIVE', features: ''
   })
   const [editingId, setEditingId] = useState(null)
 
+  // User State
+  const [users, setUsers] = useState([])
+
   useEffect(() => {
     fetchResources()
+    fetchUsers()
   }, [])
 
   const fetchResources = async () => {
@@ -18,20 +25,17 @@ export default function AdminDashboard() {
     setResources(response.data)
   }
 
-  // Handle Input Changes
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
+  const fetchUsers = async () => {
+    const response = await axios.get('http://localhost:8080/api/users')
+    setUsers(response.data)
   }
 
-  // Add or Update Resource (POST or PUT)
-  const handleSubmit = async (e) => {
+  // --- Resource Handlers ---
+  const handleResourceChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value })
+  
+  const handleResourceSubmit = async (e) => {
     e.preventDefault()
-    // Convert comma-separated features string into an array
-    const payload = {
-      ...formData,
-      features: formData.features.split(',').map(f => f.trim()).filter(f => f !== '')
-    }
-
+    const payload = { ...formData, features: formData.features.split(',').map(f => f.trim()).filter(f => f !== '') }
     try {
       if (editingId) {
         await axios.put(`http://localhost:8080/api/resources/${editingId}`, payload)
@@ -39,7 +43,6 @@ export default function AdminDashboard() {
       } else {
         await axios.post('http://localhost:8080/api/resources', payload)
       }
-      // Reset form and refresh data
       setFormData({ name: '', type: 'LECTURE_HALL', capacity: 0, location: '', status: 'ACTIVE', features: '' })
       fetchResources()
     } catch (error) {
@@ -47,94 +50,138 @@ export default function AdminDashboard() {
     }
   }
 
-  // Delete Resource
-  const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this resource?")) {
+  const handleDeleteResource = async (id) => {
+    if (window.confirm("Delete this resource?")) {
       await axios.delete(`http://localhost:8080/api/resources/${id}`)
       fetchResources()
     }
   }
 
-  // Populate form for editing
-  const handleEdit = (resource) => {
+  const handleEditResource = (resource) => {
     setEditingId(resource.id)
-    setFormData({
-      name: resource.name,
-      type: resource.type,
-      capacity: resource.capacity,
-      location: resource.location,
-      status: resource.status,
-      features: resource.features.join(', ') // Convert array back to string for input
-    })
-    window.scrollTo(0, 0) // Scroll to top where form is
+    setFormData({ ...resource, features: resource.features.join(', ') })
+    window.scrollTo(0, 0)
+  }
+
+  // --- User Handlers ---
+  const handleRoleChange = async (userId, newRole) => {
+    try {
+      await axios.put(`http://localhost:8080/api/users/${userId}/role`, { role: newRole })
+      fetchUsers() // Refresh the list to show the new role
+    } catch (error) {
+      console.error("Error updating role:", error)
+      alert("Failed to update role. Check console.")
+    }
   }
 
   return (
     <div className="dashboard">
-      <div className="header">
-        <h1>Admin Control Panel</h1>
-        <p>Manage Campus Facilities & Assets</p>
-      </div>
-
-      {/* The Input Form */}
-      <div className="form-container">
-        <h2>{editingId ? 'Edit Resource' : 'Add New Resource'}</h2>
-        <form onSubmit={handleSubmit}>
-          <div className="form-grid">
-            <div className="form-group">
-              <label>Name</label>
-              <input type="text" name="name" value={formData.name} onChange={handleChange} required />
-            </div>
-            <div className="form-group">
-              <label>Type</label>
-              <select name="type" value={formData.type} onChange={handleChange}>
-                <option value="LECTURE_HALL">Lecture Hall</option>
-                <option value="LAB">Lab</option>
-                <option value="MEETING_ROOM">Meeting Room</option>
-                <option value="EQUIPMENT">Equipment</option>
-              </select>
-            </div>
-            <div className="form-group">
-              <label>Capacity</label>
-              <input type="number" name="capacity" value={formData.capacity} onChange={handleChange} required />
-            </div>
-            <div className="form-group">
-              <label>Location</label>
-              <input type="text" name="location" value={formData.location} onChange={handleChange} required />
-            </div>
-            <div className="form-group">
-              <label>Status</label>
-              <select name="status" value={formData.status} onChange={handleChange}>
-                <option value="ACTIVE">Active</option>
-                <option value="MAINTENANCE">Maintenance</option>
-                <option value="OUT_OF_SERVICE">Out of Service</option>
-              </select>
-            </div>
-            <div className="form-group">
-              <label>Features</label>
-              <input type="text" name="features" value={formData.features} onChange={handleChange} placeholder="e.g. Projector, AC, Whiteboard" />
-            </div>
-          </div>
-          <button type="submit" className="btn btn-primary">
-            {editingId ? 'Update Resource' : 'Save New Resource'}
+      <div className="header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+        <div>
+          <h1>Admin Control Panel</h1>
+          <p>Manage Campus Facilities & User Access</p>
+        </div>
+        
+        {/* Tab Navigation */}
+        <div style={{ display: 'flex', gap: '1rem' }}>
+          <button 
+            className={`btn ${activeTab === 'resources' ? 'btn-primary' : ''}`}
+            onClick={() => setActiveTab('resources')}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0, background: activeTab !== 'resources' ? '#e4e4e7' : '', color: activeTab !== 'resources' ? '#3f3f46' : '' }}
+          >
+            <Server size={18} /> Resources
           </button>
-        </form>
+          <button 
+            className={`btn ${activeTab === 'users' ? 'btn-primary' : ''}`}
+            onClick={() => setActiveTab('users')}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0, background: activeTab !== 'users' ? '#e4e4e7' : '', color: activeTab !== 'users' ? '#3f3f46' : '' }}
+          >
+            <Users size={18} /> User Access
+          </button>
+        </div>
       </div>
 
-      {/* The Management Grid */}
-      <div className="grid">
-        {resources.map((resource) => (
-          <div key={resource.id} className="card">
-            <h3 style={{ margin: '0 0 0.5rem 0' }}>{resource.name}</h3>
-            <p style={{ margin: 0, fontSize: '0.9rem', color: '#52525b' }}>{resource.type} • {resource.location}</p>
-            
-            <div className="admin-actions">
-              <button onClick={() => handleEdit(resource)} className="btn btn-edit">Edit</button>
-              <button onClick={() => handleDelete(resource.id)} className="btn btn-danger">Delete</button>
-            </div>
+      {/* --- RESOURCES TAB --- */}
+      {activeTab === 'resources' && (
+        <>
+          <div className="form-container">
+            <h2>{editingId ? 'Edit Resource' : 'Add New Resource'}</h2>
+            <form onSubmit={handleResourceSubmit}>
+              <div className="form-grid">
+                <div className="form-group"><label>Name</label><input type="text" name="name" value={formData.name} onChange={handleResourceChange} required /></div>
+                <div className="form-group"><label>Type</label><select name="type" value={formData.type} onChange={handleResourceChange}><option value="LECTURE_HALL">Lecture Hall</option><option value="LAB">Lab</option><option value="MEETING_ROOM">Meeting Room</option><option value="EQUIPMENT">Equipment</option></select></div>
+                <div className="form-group"><label>Capacity</label><input type="number" name="capacity" value={formData.capacity} onChange={handleResourceChange} required /></div>
+                <div className="form-group"><label>Location</label><input type="text" name="location" value={formData.location} onChange={handleResourceChange} required /></div>
+                <div className="form-group"><label>Status</label><select name="status" value={formData.status} onChange={handleResourceChange}><option value="ACTIVE">Active</option><option value="MAINTENANCE">Maintenance</option><option value="OUT_OF_SERVICE">Out of Service</option></select></div>
+                <div className="form-group"><label>Features (comma separated)</label><input type="text" name="features" value={formData.features} onChange={handleResourceChange} /></div>
+              </div>
+              <button type="submit" className="btn btn-primary">{editingId ? 'Update Resource' : 'Save New Resource'}</button>
+            </form>
           </div>
-        ))}
-      </div>
+
+          <div className="grid">
+            {resources.map((resource) => (
+              <div key={resource.id} className="card">
+                <h3 style={{ margin: '0 0 0.5rem 0' }}>{resource.name}</h3>
+                <p style={{ margin: 0, fontSize: '0.9rem', color: '#52525b' }}>{resource.type} • {resource.location}</p>
+                <div className="admin-actions">
+                  <button onClick={() => handleEditResource(resource)} className="btn btn-edit">Edit</button>
+                  <button onClick={() => handleDeleteResource(resource.id)} className="btn btn-danger">Delete</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* --- USERS TAB --- */}
+      {activeTab === 'users' && (
+        <div className="form-container">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', color: '#ef4444' }}>
+            <ShieldAlert size={24} />
+            <h2 style={{ margin: 0 }}>Access Control Management</h2>
+          </div>
+          
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid #e4e4e7' }}>
+                <th style={{ padding: '1rem 0.5rem' }}>User</th>
+                <th style={{ padding: '1rem 0.5rem' }}>Email</th>
+                <th style={{ padding: '1rem 0.5rem' }}>System Role</th>
+                <th style={{ padding: '1rem 0.5rem' }}>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map(user => (
+                <tr key={user.id} style={{ borderBottom: '1px solid #f4f4f5' }}>
+                  <td style={{ padding: '1rem 0.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <img src={user.pictureUrl} alt="" style={{ width: '32px', height: '32px', borderRadius: '50%' }} />
+                    <strong>{user.name}</strong>
+                  </td>
+                  <td style={{ padding: '1rem 0.5rem', color: '#52525b' }}>{user.email}</td>
+                  <td style={{ padding: '1rem 0.5rem' }}>
+                    <span className={`status-badge status-${user.role === 'ADMIN' ? 'OUT_OF_SERVICE' : user.role === 'TECHNICIAN' ? 'MAINTENANCE' : 'ACTIVE'}`}>
+                      {user.role}
+                    </span>
+                  </td>
+                  <td style={{ padding: '1rem 0.5rem' }}>
+                    <select 
+                      value={user.role} 
+                      onChange={(e) => handleRoleChange(user.id, e.target.value)}
+                      style={{ padding: '0.4rem', borderRadius: '6px', border: '1px solid #d4d4d8' }}
+                      disabled={user.email === 'your.email@gmail.com'} // Prevent the Master Admin from demoting themselves!
+                    >
+                      <option value="USER">User (Student/Staff)</option>
+                      <option value="TECHNICIAN">Technician</option>
+                      <option value="ADMIN">Administrator</option>
+                    </select>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   )
 }

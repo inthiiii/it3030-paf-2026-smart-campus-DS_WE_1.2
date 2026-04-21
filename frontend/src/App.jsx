@@ -1,19 +1,65 @@
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom'
 import UserDashboard from './pages/UserDashboard'
 import AdminDashboard from './pages/AdminDashboard'
+import LoginPage from './pages/LoginPage'
+import { LogOut } from 'lucide-react'
 import './index.css'
+
+// A wrapper component to protect the Admin route
+const AdminRoute = ({ children }) => {
+  const role = localStorage.getItem('user_role');
+  if (role !== 'ADMIN') {
+    return <Navigate to="/login" />;
+  }
+  return children;
+};
+
+// Navigation Component
+const NavBar = () => {
+  const navigate = useNavigate();
+  const token = localStorage.getItem('jwt_token');
+  const role = localStorage.getItem('user_role');
+  const picture = localStorage.getItem('user_picture');
+
+  const handleLogout = () => {
+    localStorage.clear();
+    navigate('/login');
+  };
+
+  return (
+    <nav style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: '1.5rem' }}>
+        <Link to="/">Campus Dashboard</Link>
+        {role === 'ADMIN' && <Link to="/admin">Admin Panel</Link>}
+      </div>
+      
+      {token ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          {picture && <img src={picture} alt="Profile" style={{ width: '32px', height: '32px', borderRadius: '50%' }} />}
+          <button onClick={handleLogout} className="btn" style={{ background: '#f4f4f5', color: '#ef4444', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <LogOut size={16} /> Logout
+          </button>
+        </div>
+      ) : (
+        <Link to="/login" className="btn btn-primary" style={{ marginTop: 0 }}>Login</Link>
+      )}
+    </nav>
+  );
+};
 
 function App() {
   return (
     <Router>
-      <nav>
-        <Link to="/">Campus Dashboard</Link>
-        <Link to="/admin">Admin Panel</Link>
-      </nav>
-
+      <NavBar />
       <Routes>
         <Route path="/" element={<UserDashboard />} />
-        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/login" element={<LoginPage />} />
+        {/* The Admin Dashboard is now wrapped in our protection logic! */}
+        <Route path="/admin" element={
+          <AdminRoute>
+            <AdminDashboard />
+          </AdminRoute>
+        } />
       </Routes>
     </Router>
   )
