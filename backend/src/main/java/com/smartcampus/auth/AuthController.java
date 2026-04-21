@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Collections;
 import java.util.Map;
 
+import com.smartcampus.audit.AuditService;
+
 @RestController
 @RequestMapping("/api/auth")
 @CrossOrigin(origins = "http://localhost:5173")
@@ -28,6 +30,9 @@ public class AuthController {
 
     @Autowired
     private JwtUtil jwtUtil;
+
+    @Autowired
+    private AuditService auditService;
 
     @PostMapping("/google")
     public ResponseEntity<?> authenticateWithGoogle(@RequestBody Map<String, String> payload) {
@@ -63,6 +68,9 @@ public class AuthController {
 
                 // 3. Generate our secure JWT
                 String jwt = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
+
+                // Record this event in the Black Box!
+                auditService.logAction(user.getEmail(), "LOGIN", "User authenticated successfully via Google OAuth");
 
                 // 4. Send the user data and token back to React
                 return ResponseEntity.ok(Map.of(
