@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getMyTickets, addComment } from '../../services/ticketService';
 import { MessageSquare, Clock, ChevronDown, ChevronUp, Send } from 'lucide-react';
+import SlaTimer from './SlaTimer';
 
 // Utility: map status to a badge color
 const STATUS_COLORS = {
@@ -43,7 +44,7 @@ export default function MyTicketsPage() {
     try {
       await addComment(ticketId, commentText);
       setCommentText('');
-      fetchTickets(); // Refresh to show new comment
+      fetchTickets();
     } catch (err) {
       console.error(err);
     } finally {
@@ -102,6 +103,29 @@ export default function MyTicketsPage() {
               {expandedId === ticket.id && (
                 <div style={{ marginTop: '1.5rem', borderTop: '1px solid #f4f4f5', paddingTop: '1.5rem' }}>
                   <p style={{ marginBottom: '1rem' }}>{ticket.description}</p>
+
+                  {/* ===== SLA TIMERS ===== */}
+                  <div style={{
+                    display: 'flex',
+                    gap: '1rem',
+                    flexWrap: 'wrap',
+                    marginBottom: '1.5rem',
+                  }}>
+                    <SlaTimer
+                      label="First Response"
+                      createdAt={ticket.createdAt}
+                      completedAt={ticket.firstResponseAt}
+                      slaMinutes={ticket.slaResponseMinutes}
+                      breached={ticket.slaResponseBreached}
+                    />
+                    <SlaTimer
+                      label="Resolution"
+                      createdAt={ticket.createdAt}
+                      completedAt={ticket.resolvedAt}
+                      slaMinutes={ticket.slaResolutionMinutes}
+                      breached={ticket.slaResolutionBreached}
+                    />
+                  </div>
 
                   {/* Image Attachments */}
                   {ticket.imageBase64 && ticket.imageBase64.length > 0 && (

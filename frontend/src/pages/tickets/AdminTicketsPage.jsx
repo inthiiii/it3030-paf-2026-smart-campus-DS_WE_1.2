@@ -5,6 +5,7 @@ import {
   addComment,
 } from '../../services/ticketService';
 import { Filter, MessageSquare, ArrowRight, Send, Clock } from 'lucide-react';
+import SlaTimer from './SlaTimer';
 
 const STATUS_COLORS = {
   OPEN: '#3b82f6',
@@ -138,6 +139,29 @@ export default function AdminTicketsPage() {
               {expandedId === ticket.id && (
                 <div style={{ marginTop: '1.5rem', borderTop: '1px solid #f4f4f5', paddingTop: '1.5rem' }}>
                   <p style={{ marginBottom: '1.5rem' }}>{ticket.description}</p>
+
+                  {/* ===== SLA TIMERS ===== */}
+                  <div style={{
+                    display: 'flex',
+                    gap: '1rem',
+                    flexWrap: 'wrap',
+                    marginBottom: '1.5rem',
+                  }}>
+                    <SlaTimer
+                      label="First Response"
+                      createdAt={ticket.createdAt}
+                      completedAt={ticket.firstResponseAt}
+                      slaMinutes={ticket.slaResponseMinutes}
+                      breached={ticket.slaResponseBreached}
+                    />
+                    <SlaTimer
+                      label="Resolution"
+                      createdAt={ticket.createdAt}
+                      completedAt={ticket.resolvedAt}
+                      slaMinutes={ticket.slaResolutionMinutes}
+                      breached={ticket.slaResolutionBreached}
+                    />
+                  </div>
 
                   {/* Image Attachments */}
                   {ticket.imageBase64 && ticket.imageBase64.length > 0 && (
