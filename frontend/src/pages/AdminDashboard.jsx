@@ -215,15 +215,21 @@ export default function AdminDashboard() {
               <p>No system activity recorded yet...</p>
             ) : (
               logs.map((log) => {
-                // Format the timestamp nicely
                 const date = new Date(log.timestamp).toLocaleString()
+                
+                // NEW: Make the text red and bold if it's suspicious
+                const isSuspicious = log.action === 'SUSPICIOUS_LOGIN';
+                const actionColor = isSuspicious ? '#ef4444' : '#f59e0b';
+                
                 return (
-                  <div key={log.id} style={{ marginBottom: '1rem', borderBottom: '1px dashed #27272a', paddingBottom: '0.5rem' }}>
+                  <div key={log.id} style={{ marginBottom: '1rem', borderBottom: '1px dashed #27272a', paddingBottom: '0.5rem', background: isSuspicious ? 'rgba(239, 68, 68, 0.1)' : 'transparent' }}>
                     <span style={{ color: '#3b82f6' }}>[{date}]</span>{' '}
-                    <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>{log.action}</span>{' '}
+                    <span style={{ color: actionColor, fontWeight: 'bold' }}>{log.action}</span>{' '}
                     <span style={{ color: 'white' }}>| User: {log.userEmail}</span>
                     <br />
-                    <span style={{ color: '#10b981', marginLeft: '1rem' }}>► {log.details}</span>
+                    <span style={{ color: isSuspicious ? '#ef4444' : '#10b981', marginLeft: '1rem', fontWeight: isSuspicious ? 'bold' : 'normal' }}>
+                      ► {log.details}
+                    </span>
                   </div>
                 )
               })

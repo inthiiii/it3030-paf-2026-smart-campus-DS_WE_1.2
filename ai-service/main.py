@@ -4,8 +4,11 @@ from pydantic import BaseModel
 from sentence_transformers import SentenceTransformer
 from pinecone import Pinecone
 from dotenv import load_dotenv
+from datetime import datetime
+from sklearn.ensemble import IsolationForest
 
 import os
+import numpy as np
 
 # Load variables from .env file
 load_dotenv()
@@ -56,3 +59,54 @@ def search_resources(request: SearchRequest):
 @app.get("/health")
 def health_check():
     return {"status": "AI Engine is Online with Pinecone"}
+
+# --- MODULE E: Suspicious Login Detection (Anomaly AI) ---
+
+# In-memory storage for user login times (converted to decimal hours: 0.0 - 23.99)
+# In a real enterprise app, you would fetch this history from MongoDB!
+user_login_history = {}
+
+class LoginRequest(BaseModel):
+    email: str
+    timestamp: str # ISO format string
+
+@app.post("/api/anomaly/login")
+def check_suspicious_login(request: LoginRequest):
+    email = request.email
+    
+    # Parse the timestamp to a decimal hour (e.g., 14:30 -> 14.5)
+    dt = datetime.fromisoformat(request.timestamp.replace("Z", "+00:00"))
+    login_hour = dt.hour + (dt.minute / 60.0)
+
+    # If this is a new user, give them a "baseline" normal schedule (9 AM - 5 PM)
+    # This prevents the AI from crashing on their very first login
+    if email not in user_login_history:
+        user_login_history[email] = [9.0, 9.5, 10.0, 14.0, 16.0, 17.0] # [1.0, 1.5, 2.0, 3.0, 4.0]
+
+    history = user_login_history[email]
+
+    # Reshape the data for the AI Model
+    X = np.array(history).reshape(-1, 1)
+    
+    # Train the Isolation Forest Model
+    # contamination=0.1 means we expect roughly 10% of logins to be weird/outliers
+    model = IsolationForest(contamination=0.1, random_state=42)
+    model.fit(X)
+
+    # Test the current login time against the learned model
+    current_login = np.array([[login_hour]])
+    prediction = model.predict(current_login) # returns 1 for normal, -1 for anomaly
+    
+    is_suspicious = bool(prediction[0] == -1)
+
+    # Add this current login to their history so the AI gets smarter next time!
+    history.append(login_hour)
+
+    return {
+        "email": email,
+        "login_hour": round(login_hour, 2),
+        "is_suspicious": is_suspicious
+    }
+
+# --- END MODULE E ---
+
