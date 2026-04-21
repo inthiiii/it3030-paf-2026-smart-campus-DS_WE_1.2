@@ -2,15 +2,30 @@ import { BrowserRouter as Router, Routes, Route, Link, useNavigate, Navigate } f
 import UserDashboard from './pages/UserDashboard'
 import AdminDashboard from './pages/AdminDashboard'
 import LoginPage from './pages/LoginPage'
-import { LogOut } from 'lucide-react'
+import ReportTicketPage from './pages/tickets/ReportTicketPage'
+import MyTicketsPage from './pages/tickets/MyTicketsPage'
+import AdminTicketsPage from './pages/tickets/AdminTicketsPage'
+import { LogOut, AlertTriangle, ClipboardList, Settings } from 'lucide-react'
 import './index.css'
 
-// A wrapper component to protect the Admin route
+// Protects routes that require login
+const PrivateRoute = ({ children }) => {
+  const token = localStorage.getItem('jwt_token');
+  if (!token) return <Navigate to="/login" />;
+  return children;
+};
+
+// Protects the Admin route
 const AdminRoute = ({ children }) => {
   const role = localStorage.getItem('user_role');
-  if (role !== 'ADMIN') {
-    return <Navigate to="/login" />;
-  }
+  if (role !== 'ADMIN') return <Navigate to="/login" />;
+  return children;
+};
+
+// Protects routes that require ADMIN or TECHNICIAN
+const StaffRoute = ({ children }) => {
+  const role = localStorage.getItem('user_role');
+  if (role !== 'ADMIN' && role !== 'TECHNICIAN') return <Navigate to="/" />;
   return children;
 };
 
@@ -28,8 +43,11 @@ const NavBar = () => {
 
   return (
     <nav style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-      <div style={{ display: 'flex', gap: '1.5rem' }}>
+      <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
         <Link to="/">Campus Dashboard</Link>
+        {token && <Link to="/report-issue" style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}><AlertTriangle size={16} />Report Issue</Link>}
+        {token && <Link to="/my-tickets" style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}><ClipboardList size={16} />My Tickets</Link>}
+        {(role === 'ADMIN' || role === 'TECHNICIAN') && <Link to="/all-tickets" style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}><Settings size={16} />All Tickets</Link>}
         {role === 'ADMIN' && <Link to="/admin">Admin Panel</Link>}
       </div>
       
@@ -54,12 +72,14 @@ function App() {
       <Routes>
         <Route path="/" element={<UserDashboard />} />
         <Route path="/login" element={<LoginPage />} />
-        {/* The Admin Dashboard is now wrapped in our protection logic! */}
-        <Route path="/admin" element={
-          <AdminRoute>
-            <AdminDashboard />
-          </AdminRoute>
-        } />
+
+        {/* Module C Routes */}
+        <Route path="/report-issue" element={<PrivateRoute><ReportTicketPage /></PrivateRoute>} />
+        <Route path="/my-tickets" element={<PrivateRoute><MyTicketsPage /></PrivateRoute>} />
+        <Route path="/all-tickets" element={<StaffRoute><AdminTicketsPage /></StaffRoute>} />
+
+        {/* Admin Panel */}
+        <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
       </Routes>
     </Router>
   )
