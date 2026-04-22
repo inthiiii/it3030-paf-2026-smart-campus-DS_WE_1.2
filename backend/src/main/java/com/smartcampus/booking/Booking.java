@@ -1,9 +1,11 @@
 package com.smartcampus.booking;
 
+import java.time.LocalDateTime;
+
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+
 import lombok.Data;
-import java.time.LocalDateTime;
 
 @Data
 @Document(collection = "bookings")
@@ -24,6 +26,7 @@ public class Booking {
     public enum BookingStatus {
         PENDING,
         CONFIRMED,
+        REJECTED,
         CANCELLED,
         COMPLETED
     }
