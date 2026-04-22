@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
-import { Users, Server, ShieldAlert, Activity } from 'lucide-react'
+import { Users, Server, ShieldAlert, Activity, CalendarCheck } from 'lucide-react'
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('resources') // 'resources' or 'users'
@@ -18,10 +18,22 @@ export default function AdminDashboard() {
   // Audit Log State
   const [logs, setLogs] = useState([])
 
+  // Booking Requests State
+  const [allBookings, setAllBookings] = useState([])
+
   useEffect(() => {
     fetchResources()
     fetchUsers()
     fetchLogs()
+    fetchAllBookings() // NEW
+    const fetchAllBookings = async () => {
+      try {
+        const response = await axios.get('http://localhost:8080/api/bookings/all')
+        setAllBookings(response.data)
+      } catch (error) {
+        console.error("Error fetching bookings:", error)
+      }
+    }
   }, [])
 
   const fetchResources = async () => {
@@ -118,8 +130,46 @@ export default function AdminDashboard() {
           >
             <Users size={18} /> User Access
           </button>
+          <button
+            className={`btn ${activeTab === 'bookings' ? 'btn-primary' : ''}`}
+            onClick={() => setActiveTab('bookings')}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0, background: activeTab !== 'bookings' ? '#e4e4e7' : '', color: activeTab !== 'bookings' ? '#3f3f46' : '' }}
+          >
+            <CalendarCheck size={18} /> Booking Requests
+          </button>
         </div>
       </div>
+      {/* --- BOOKINGS TAB --- */}
+      {activeTab === 'bookings' && (
+        <div className="form-container">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', color: '#0ea5e9' }}>
+            <CalendarCheck size={24} />
+            <h2 style={{ margin: 0 }}>Booking Requests</h2>
+          </div>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid #e4e4e7' }}>
+                <th style={{ padding: '1rem 0.5rem' }}>User</th>
+                <th style={{ padding: '1rem 0.5rem' }}>Resource</th>
+                <th style={{ padding: '1rem 0.5rem' }}>Start Time</th>
+                <th style={{ padding: '1rem 0.5rem' }}>End Time</th>
+                <th style={{ padding: '1rem 0.5rem' }}>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {allBookings.map(booking => (
+                <tr key={booking.id} style={{ borderBottom: '1px solid #f4f4f5' }}>
+                  <td style={{ padding: '1rem 0.5rem' }}>{booking.userEmail}</td>
+                  <td style={{ padding: '1rem 0.5rem' }}>{booking.resourceId}</td>
+                  <td style={{ padding: '1rem 0.5rem' }}>{new Date(booking.startTime).toLocaleString()}</td>
+                  <td style={{ padding: '1rem 0.5rem' }}>{new Date(booking.endTime).toLocaleString()}</td>
+                  <td style={{ padding: '1rem 0.5rem' }}>{booking.status}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* --- RESOURCES TAB --- */}
       {activeTab === 'resources' && (
