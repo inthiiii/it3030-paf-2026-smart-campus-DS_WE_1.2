@@ -144,7 +144,7 @@ export default function BookingDashboard() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {myBookings.map(booking => (
-                <div key={booking.id} style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', boxShadow: '0 2px 4px rgb(0 0 0 / 0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderLeft: `4px solid ${booking.status === 'CANCELLED' || booking.status === 'REJECTED' ? '#ef4444' : booking.status === 'PENDING' ? '#eab308' : '#22c55e'}` }}>
+                <div key={booking.id} style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', boxShadow: '0 2px 4px rgb(0 0 0 / 0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center',  borderLeft: `4px solid ${booking.status === 'CANCELLED' || booking.status === 'REJECTED' ? '#ef4444' : booking.status === 'PENDING' ? '#eab308' : '#22c55e'}` }}>
                   
                   <div>
                     <h3 style={{ margin: '0 0 0.5rem 0' }}>{getResourceName(booking.resourceId)}</h3>

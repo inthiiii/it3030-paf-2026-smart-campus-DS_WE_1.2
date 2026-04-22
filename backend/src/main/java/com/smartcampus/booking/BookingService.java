@@ -24,6 +24,10 @@ public class BookingService {
 
     public Booking createBooking(Booking newBooking, String userEmail) {
         newBooking.setUserEmail(userEmail);
+<<<<<<< HEAD
+=======
+        
+>>>>>>> e6ab7df (Booking Admin UI)
         // 1. All new requests start as PENDING
         newBooking.setStatus(Booking.BookingStatus.PENDING);
 
@@ -58,7 +62,11 @@ public class BookingService {
     public Booking updateBookingStatus(String bookingId, Booking.BookingStatus newStatus, String adminEmail) {
         Booking booking = bookingRepository.findById(bookingId)
             .orElseThrow(() -> new RuntimeException("Booking not found"));
+<<<<<<< HEAD
         
+=======
+            
+>>>>>>> e6ab7df (Booking Admin UI)
         booking.setStatus(newStatus);
         Booking updated = bookingRepository.save(booking);
         

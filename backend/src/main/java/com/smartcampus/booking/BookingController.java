@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
+<<<<<<< HEAD
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -13,6 +14,12 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+=======
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
+>>>>>>> e6ab7df (Booking Admin UI)
 
 @RestController
 @RequestMapping("/api/bookings")
@@ -72,7 +79,11 @@ public class BookingController {
 
     // PUT: Admin Approves or Rejects a booking
     @PutMapping("/{id}/status")
+<<<<<<< HEAD
     public ResponseEntity<?> updateStatus(@PathVariable String id, @RequestBody java.util.Map<String, String> payload) {
+=======
+    public ResponseEntity<?> updateStatus(@PathVariable String id, @RequestBody Map<String, String> payload) {
+>>>>>>> e6ab7df (Booking Admin UI)
         try {
             String adminEmail = SecurityContextHolder.getContext().getAuthentication().getName();
             Booking.BookingStatus status = Booking.BookingStatus.valueOf(payload.get("status"));
@@ -83,3 +94,7 @@ public class BookingController {
         }
     }
 }
+<<<<<<< HEAD
+=======
+
+>>>>>>> e6ab7df (Booking Admin UI)

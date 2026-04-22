@@ -9,12 +9,13 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface BookingRepository extends MongoRepository<Booking, String> {
     
-    // Fetch all bookings made by a specific user
     List<Booking> findByUserEmailOrderByStartTimeDesc(String email);
-    
-    // Fetch all bookings for a specific resource (useful for calendar views)
     List<Booking> findByResourceIdOrderByStartTimeAsc(String resourceId);
+    
+    // NEW: Fetch all bookings for the Admin Dashboard
+    List<Booking> findAllByOrderByStartTimeDesc();
 
+<<<<<<< HEAD
     // CRITICAL: Find overlapping bookings to prevent double-booking!
     // The logic here: A booking overlaps if an existing booking starts BEFORE the new End Time 
     // AND the existing booking ends AFTER the new Start Time.
@@ -30,3 +31,9 @@ public interface BookingRepository extends MongoRepository<Booking, String> {
     List<Booking> findByResourceIdAndStartTimeLessThanAndEndTimeGreaterThanAndStatusIn(
         String resourceId, LocalDateTime newEndTime, LocalDateTime newStartTime, List<Booking.BookingStatus> statuses);
 }
+=======
+    // UPDATED: Find overlapping bookings that are either PENDING or CONFIRMED
+    List<Booking> findByResourceIdAndStartTimeLessThanAndEndTimeGreaterThanAndStatusIn(
+        String resourceId, LocalDateTime newEndTime, LocalDateTime newStartTime, List<Booking.BookingStatus> statuses);
+}
+>>>>>>> e6ab7df (Booking Admin UI)
