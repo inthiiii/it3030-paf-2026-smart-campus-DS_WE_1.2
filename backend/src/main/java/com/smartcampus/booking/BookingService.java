@@ -1,13 +1,14 @@
 package com.smartcampus.booking;
 
-import com.smartcampus.audit.AuditService;
-import com.smartcampus.user.User;
-import com.smartcampus.user.UserRepository;
+import java.time.LocalDateTime;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
-import java.util.List;
+import com.smartcampus.audit.AuditService;
+import com.smartcampus.user.User;
+import com.smartcampus.user.UserRepository;
 
 @Service
 public class BookingService {
@@ -22,36 +23,47 @@ public class BookingService {
     private AuditService auditService;
 
     public Booking createBooking(Booking newBooking, String userEmail) {
-        // 1. Enforce business rules
         newBooking.setUserEmail(userEmail);
-        newBooking.setStatus(Booking.BookingStatus.CONFIRMED);
+        // 1. All new requests start as PENDING
+        newBooking.setStatus(Booking.BookingStatus.PENDING);
 
         if (newBooking.getStartTime().isAfter(newBooking.getEndTime())) {
             throw new RuntimeException("End time must be after the start time.");
         }
-
         if (newBooking.getStartTime().isBefore(LocalDateTime.now())) {
             throw new RuntimeException("Cannot book a resource in the past.");
         }
 
-        // 2. CONFLICT DETECTION ALGORITHM
-        // Check if any existing CONFIRMED or PENDING booking overlaps with this time slot
-        List<Booking> overlapping = bookingRepository.findByResourceIdAndStartTimeLessThanAndEndTimeGreaterThanAndStatusNot(
-                newBooking.getResourceId(), 
-                newBooking.getEndTime(), 
-                newBooking.getStartTime(), 
-                Booking.BookingStatus.CANCELLED
+        // 2. CONFLICT ALGORITHM: Block if someone already has a PENDING or CONFIRMED booking here
+        List<Booking.BookingStatus> blockingStatuses = List.of(Booking.BookingStatus.PENDING, Booking.BookingStatus.CONFIRMED);
+        List<Booking> overlapping = bookingRepository.findByResourceIdAndStartTimeLessThanAndEndTimeGreaterThanAndStatusIn(
+                newBooking.getResourceId(), newBooking.getEndTime(), newBooking.getStartTime(), blockingStatuses
         );
 
         if (!overlapping.isEmpty()) {
-            throw new RuntimeException("Double-Booking Prevented: This resource is already reserved for the selected time slot.");
+            throw new RuntimeException("This time slot is currently locked or already booked by another user.");
         }
 
-        // 3. Save and Log
         Booking saved = bookingRepository.save(newBooking);
-        auditService.logAction(userEmail, "CREATE_BOOKING", "Reserved resource ID: " + newBooking.getResourceId());
-        
+        auditService.logAction(userEmail, "REQUEST_BOOKING", "Requested resource ID: " + newBooking.getResourceId());
         return saved;
+    }
+
+    // NEW ADMIN METHOD: Get all bookings
+    public List<Booking> getAllBookings() {
+        return bookingRepository.findAllByOrderByStartTimeDesc();
+    }
+
+    // NEW ADMIN METHOD: Approve or Reject
+    public Booking updateBookingStatus(String bookingId, Booking.BookingStatus newStatus, String adminEmail) {
+        Booking booking = bookingRepository.findById(bookingId)
+            .orElseThrow(() -> new RuntimeException("Booking not found"));
+        
+        booking.setStatus(newStatus);
+        Booking updated = bookingRepository.save(booking);
+        
+        auditService.logAction(adminEmail, "REVIEW_BOOKING", "Set booking " + bookingId + " to " + newStatus.name());
+        return updated;
     }
 
     public List<Booking> getUserBookings(String userEmail) {
