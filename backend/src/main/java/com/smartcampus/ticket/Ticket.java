@@ -38,20 +38,29 @@ public class Ticket {
     private Instant updatedAt = Instant.now();
 
     // ========== SLA TRACKING FIELDS ==========
-
-    // When staff (ADMIN/TECHNICIAN) posts the first comment
     private Instant firstResponseAt;
-
-    // When status is changed to RESOLVED
     private Instant resolvedAt;
-
-    // SLA targets in minutes (defaults: 4 hours and 24 hours)
-    private long slaResponseMinutes = 240;    // 4 hours
-    private long slaResolutionMinutes = 1440; // 24 hours
-
-    // Whether each SLA was breached
+    private long slaResponseMinutes = 240;
+    private long slaResolutionMinutes = 1440;
     private boolean slaResponseBreached = false;
     private boolean slaResolutionBreached = false;
+
+    // ========== ML DAMAGE ASSESSMENT FIELDS ==========
+
+    // e.g. "AV_EQUIPMENT", "IT_HARDWARE", "FURNITURE", etc.
+    private String mlFaultCategory;
+
+    // "LOW", "MEDIUM", "HIGH", "CRITICAL"
+    private String mlSeverity;
+
+    // 1 = critical/highest, 4 = low priority
+    private Integer mlPriorityLevel;
+
+    // e.g. "AV_TECHNICIAN", "IT_TECHNICIAN", "ELECTRICIAN"
+    private String mlAssignedTechnicianRole;
+
+    // 2-3 sentence summary from Gemini
+    private String mlSummary;
 
     public enum TicketStatus {
         OPEN,
