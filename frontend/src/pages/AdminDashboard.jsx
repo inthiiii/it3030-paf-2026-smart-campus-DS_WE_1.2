@@ -1,3 +1,12 @@
+  // Handler to approve/reject bookings
+  const handleBookingAction = async (id, newStatus) => {
+    try {
+      await axios.put(`http://localhost:8080/api/bookings/${id}/status`, { status: newStatus })
+      fetchAllBookings() // Refresh the list
+    } catch (error) {
+      console.error("Failed to update booking:", error)
+    }
+  }
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 import { Users, Server, ShieldAlert, Activity, CalendarCheck } from 'lucide-react'
