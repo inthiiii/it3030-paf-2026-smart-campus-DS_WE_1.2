@@ -15,7 +15,7 @@ public class Booking {
     private String id;
     
     private String resourceId;
-    private String userEmail; // We use email because it's guaranteed by Google Auth
+    private String userEmail; 
     
     private LocalDateTime startTime;
     private LocalDateTime endTime;
@@ -23,11 +23,16 @@ public class Booking {
     private String purpose;
     private BookingStatus status;
 
+    private boolean checkedIn;
+
+    private Double aiRiskScore;
+
     public enum BookingStatus {
         PENDING,
         CONFIRMED,
         REJECTED,
         CANCELLED,
-        COMPLETED
+        COMPLETED,
+        NO_SHOW
     }
 }

@@ -6,6 +6,7 @@ from pinecone import Pinecone
 from dotenv import load_dotenv
 from datetime import datetime
 from sklearn.ensemble import IsolationForest
+from sklearn.ensemble import RandomForestClassifier
 
 import os
 import numpy as np
@@ -110,3 +111,42 @@ def check_suspicious_login(request: LoginRequest):
 
 # --- END MODULE E ---
 
+
+
+# --- MODULE B: Autonomous No-Show Prediction ---
+
+# 1. Train the Predictive Model on Startup
+print("Training No-Show Prediction Model...")
+# Features: [past_no_show_rate (0.0-1.0), hour_of_day (0-23), duration_in_hours]
+# Labels: 1 (No-Show), 0 (Showed Up)
+X_train = np.array([
+    [0.0, 10, 1], [0.8, 18, 3], [0.1, 14, 2], [0.5, 8, 1],
+    [0.0, 9, 2], [0.9, 20, 4], [0.2, 11, 1], [0.7, 16, 3]
+])
+y_train = np.array([0, 1, 0, 0, 0, 1, 0, 1])
+
+rf_model = RandomForestClassifier(n_estimators=10, random_state=42)
+rf_model.fit(X_train, y_train)
+print("Prediction Model Ready!")
+
+class PredictionRequest(BaseModel):
+    past_no_show_rate: float
+    hour_of_day: float
+    duration_hours: float
+
+@app.post("/api/predict/no-show")
+def predict_no_show(request: PredictionRequest):
+    # Format the incoming data for the model
+    features = np.array([[request.past_no_show_rate, request.hour_of_day, request.duration_hours]])
+    
+    # Predict probability of class 1 (No-Show)
+    probability = rf_model.predict_proba(features)[0][1]
+    risk_percentage = round(probability * 100, 2)
+
+    return {
+        "risk_score": risk_percentage,
+        "auto_approve": bool(risk_percentage < 40.0) # If risk is under 40%, let the AI approve it!
+    }
+    
+# --- END MODULE B ---
+    

@@ -2,12 +2,14 @@ package com.smartcampus;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
 @SpringBootApplication
+@EnableScheduling
 public class SmartCampusApplication {
 
 	public static void main(String[] args) {

@@ -286,14 +286,22 @@ export default function AdminDashboard() {
             </thead>
             <tbody>
               {allBookings.map(booking => (
-                <tr key={booking.id} style={{ borderBottom: '1px solid #f4f4f5' }}>
+                <tr key={booking.id} style={{ borderBottom: '1px solid #f4f4f5', background: booking.aiRiskScore >= 50 ? '#fef2f2' : 'transparent' }}>
                   <td style={{ padding: '1rem 0.5rem' }}><strong>{booking.userEmail}</strong></td>
                   <td style={{ padding: '1rem 0.5rem', fontSize: '0.85rem', color: '#71717a' }}>{booking.resourceId.slice(-6)}</td>
                   <td style={{ padding: '1rem 0.5rem', fontSize: '0.85rem' }}>
                     {new Date(booking.startTime).toLocaleDateString()} <br/>
                     {new Date(booking.startTime).toLocaleTimeString()} - {new Date(booking.endTime).toLocaleTimeString()}
                   </td>
-                  <td style={{ padding: '1rem 0.5rem' }}>{booking.purpose}</td>
+                  <td style={{ padding: '1rem 0.5rem' }}>
+                    {booking.purpose}
+                    {/* Display the AI Risk Badge */}
+                    {booking.aiRiskScore !== null && (
+                      <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', fontWeight: 'bold', color: booking.aiRiskScore > 40 ? '#ef4444' : '#22c55e' }}>
+                        🤖 AI Risk: {booking.aiRiskScore}%
+                      </div>
+                    )}
+                  </td>
                   <td style={{ padding: '1rem 0.5rem' }}>
                     <span className={`status-badge status-${booking.status === 'PENDING' ? 'MAINTENANCE' : booking.status === 'CONFIRMED' ? 'ACTIVE' : 'OUT_OF_SERVICE'}`}>
                       {booking.status}
