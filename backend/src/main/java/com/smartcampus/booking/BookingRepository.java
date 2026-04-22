@@ -25,4 +25,8 @@ public interface BookingRepository extends MongoRepository<Booking, String> {
     // Updated : Find overlapping bookings that are either PENDING or CONFIRMED 
     List<Booking> findByResourceIdAndStartTimeLessThanAndEndTimeGreaterThanAndStatusNot(
         String resourceId, LocalDateTime newEndTime, LocalDateTime newStartTime, Booking.BookingStatus status);
+
+    // New: Find overlapping bookings with a list of statuses (PENDING, CONFIRMED)
+    List<Booking> findByResourceIdAndStartTimeLessThanAndEndTimeGreaterThanAndStatusIn(
+        String resourceId, LocalDateTime newEndTime, LocalDateTime newStartTime, List<Booking.BookingStatus> statuses);
 }
