@@ -148,31 +148,47 @@ export default function AdminDashboard() {
           </button>
         </div>
       </div>
-      {/* --- BOOKINGS TAB --- */}
+      {/* --- BOOKING REQUESTS TAB --- */}
       {activeTab === 'bookings' && (
         <div className="form-container">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', color: '#0ea5e9' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', color: '#2563eb' }}>
             <CalendarCheck size={24} />
-            <h2 style={{ margin: 0 }}>Booking Requests</h2>
+            <h2 style={{ margin: 0 }}>Reservation Approval Inbox</h2>
           </div>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid #e4e4e7' }}>
                 <th style={{ padding: '1rem 0.5rem' }}>User</th>
-                <th style={{ padding: '1rem 0.5rem' }}>Resource</th>
-                <th style={{ padding: '1rem 0.5rem' }}>Start Time</th>
-                <th style={{ padding: '1rem 0.5rem' }}>End Time</th>
+                <th style={{ padding: '1rem 0.5rem' }}>Resource ID</th>
+                <th style={{ padding: '1rem 0.5rem' }}>Date & Time</th>
+                <th style={{ padding: '1rem 0.5rem' }}>Purpose</th>
                 <th style={{ padding: '1rem 0.5rem' }}>Status</th>
+                <th style={{ padding: '1rem 0.5rem' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {allBookings.map(booking => (
                 <tr key={booking.id} style={{ borderBottom: '1px solid #f4f4f5' }}>
-                  <td style={{ padding: '1rem 0.5rem' }}>{booking.userEmail}</td>
-                  <td style={{ padding: '1rem 0.5rem' }}>{booking.resourceId}</td>
-                  <td style={{ padding: '1rem 0.5rem' }}>{new Date(booking.startTime).toLocaleString()}</td>
-                  <td style={{ padding: '1rem 0.5rem' }}>{new Date(booking.endTime).toLocaleString()}</td>
-                  <td style={{ padding: '1rem 0.5rem' }}>{booking.status}</td>
+                  <td style={{ padding: '1rem 0.5rem' }}><strong>{booking.userEmail}</strong></td>
+                  <td style={{ padding: '1rem 0.5rem', fontSize: '0.85rem', color: '#71717a' }}>{booking.resourceId ? booking.resourceId.slice(-6) : ''}</td>
+                  <td style={{ padding: '1rem 0.5rem', fontSize: '0.85rem' }}>
+                    {booking.startTime ? new Date(booking.startTime).toLocaleDateString() : ''} <br/>
+                    {booking.startTime ? new Date(booking.startTime).toLocaleTimeString() : ''} - {booking.endTime ? new Date(booking.endTime).toLocaleTimeString() : ''}
+                  </td>
+                  <td style={{ padding: '1rem 0.5rem' }}>{booking.purpose || '-'}</td>
+                  <td style={{ padding: '1rem 0.5rem' }}>
+                    <span className={`status-badge status-${booking.status === 'PENDING' ? 'MAINTENANCE' : booking.status === 'CONFIRMED' ? 'ACTIVE' : 'OUT_OF_SERVICE'}`}>
+                      {booking.status}
+                    </span>
+                  </td>
+                  <td style={{ padding: '1rem 0.5rem', display: 'flex', gap: '0.5rem' }}>
+                    {booking.status === 'PENDING' && (
+                      <>
+                        <button onClick={() => handleBookingAction(booking.id, 'CONFIRMED')} className="btn btn-primary" style={{ padding: '0.4rem 0.8rem', margin: 0, fontSize: '0.8rem' }}>Approve</button>
+                        <button onClick={() => handleBookingAction(booking.id, 'REJECTED')} className="btn btn-danger" style={{ padding: '0.4rem 0.8rem', margin: 0, fontSize: '0.8rem' }}>Reject</button>
+                      </>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
