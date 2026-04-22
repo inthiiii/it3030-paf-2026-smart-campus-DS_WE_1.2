@@ -1,6 +1,15 @@
+  // Handler to approve/reject bookings
+  const handleBookingAction = async (id, newStatus) => {
+    try {
+      await axios.put(`http://localhost:8080/api/bookings/${id}/status`, { status: newStatus })
+      fetchAllBookings() // Refresh the list
+    } catch (error) {
+      console.error("Failed to update booking:", error)
+    }
+  }
 import { useState, useEffect } from 'react'
 import axios from 'axios'
-import { Users, Server, ShieldAlert, Activity } from 'lucide-react'
+import { Users, Server, ShieldAlert, Activity, CalendarCheck } from 'lucide-react'
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('resources') // 'resources' or 'users'
@@ -18,10 +27,22 @@ export default function AdminDashboard() {
   // Audit Log State
   const [logs, setLogs] = useState([])
 
+  // Booking Requests State
+  const [allBookings, setAllBookings] = useState([])
+
   useEffect(() => {
     fetchResources()
     fetchUsers()
     fetchLogs()
+    fetchAllBookings() // NEW
+    const fetchAllBookings = async () => {
+      try {
+        const response = await axios.get('http://localhost:8080/api/bookings/all')
+        setAllBookings(response.data)
+      } catch (error) {
+        console.error("Error fetching bookings:", error)
+      }
+    }
   }, [])
 
   const fetchResources = async () => {
@@ -111,6 +132,13 @@ export default function AdminDashboard() {
           >
             <Activity size={18} /> System Logs
           </button>
+          <button
+            className={`btn ${activeTab === 'bookings' ? 'btn-primary' : ''}`}
+            onClick={() => setActiveTab('bookings')}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0, background: activeTab !== 'bookings' ? '#e4e4e7' : '', color: activeTab !== 'bookings' ? '#3f3f46' : '' }}
+          >
+            <CalendarCheck size={18} /> Booking Requests
+          </button>
           <button 
             className={`btn ${activeTab === 'users' ? 'btn-primary' : ''}`}
             onClick={() => setActiveTab('users')}
@@ -120,6 +148,53 @@ export default function AdminDashboard() {
           </button>
         </div>
       </div>
+      {/* --- BOOKING REQUESTS TAB --- */}
+      {activeTab === 'bookings' && (
+        <div className="form-container">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', color: '#2563eb' }}>
+            <CalendarCheck size={24} />
+            <h2 style={{ margin: 0 }}>Reservation Approval Inbox</h2>
+          </div>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid #e4e4e7' }}>
+                <th style={{ padding: '1rem 0.5rem' }}>User</th>
+                <th style={{ padding: '1rem 0.5rem' }}>Resource ID</th>
+                <th style={{ padding: '1rem 0.5rem' }}>Date & Time</th>
+                <th style={{ padding: '1rem 0.5rem' }}>Purpose</th>
+                <th style={{ padding: '1rem 0.5rem' }}>Status</th>
+                <th style={{ padding: '1rem 0.5rem' }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {allBookings.map(booking => (
+                <tr key={booking.id} style={{ borderBottom: '1px solid #f4f4f5' }}>
+                  <td style={{ padding: '1rem 0.5rem' }}><strong>{booking.userEmail}</strong></td>
+                  <td style={{ padding: '1rem 0.5rem', fontSize: '0.85rem', color: '#71717a' }}>{booking.resourceId ? booking.resourceId.slice(-6) : ''}</td>
+                  <td style={{ padding: '1rem 0.5rem', fontSize: '0.85rem' }}>
+                    {booking.startTime ? new Date(booking.startTime).toLocaleDateString() : ''} <br/>
+                    {booking.startTime ? new Date(booking.startTime).toLocaleTimeString() : ''} - {booking.endTime ? new Date(booking.endTime).toLocaleTimeString() : ''}
+                  </td>
+                  <td style={{ padding: '1rem 0.5rem' }}>{booking.purpose || '-'}</td>
+                  <td style={{ padding: '1rem 0.5rem' }}>
+                    <span className={`status-badge status-${booking.status === 'PENDING' ? 'MAINTENANCE' : booking.status === 'CONFIRMED' ? 'ACTIVE' : 'OUT_OF_SERVICE'}`}>
+                      {booking.status}
+                    </span>
+                  </td>
+                  <td style={{ padding: '1rem 0.5rem', display: 'flex', gap: '0.5rem' }}>
+                    {booking.status === 'PENDING' && (
+                      <>
+                        <button onClick={() => handleBookingAction(booking.id, 'CONFIRMED')} className="btn btn-primary" style={{ padding: '0.4rem 0.8rem', margin: 0, fontSize: '0.8rem' }}>Approve</button>
+                        <button onClick={() => handleBookingAction(booking.id, 'REJECTED')} className="btn btn-danger" style={{ padding: '0.4rem 0.8rem', margin: 0, fontSize: '0.8rem' }}>Reject</button>
+                      </>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* --- RESOURCES TAB --- */}
       {activeTab === 'resources' && (
