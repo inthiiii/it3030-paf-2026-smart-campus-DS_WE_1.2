@@ -132,19 +132,19 @@ export default function AdminDashboard() {
           >
             <Activity size={18} /> System Logs
           </button>
-          <button 
-            className={`btn ${activeTab === 'users' ? 'btn-primary' : ''}`}
-            onClick={() => setActiveTab('users')}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0, background: activeTab !== 'users' ? '#e4e4e7' : '', color: activeTab !== 'users' ? '#3f3f46' : '' }}
-          >
-            <Users size={18} /> User Access
-          </button>
           <button
             className={`btn ${activeTab === 'bookings' ? 'btn-primary' : ''}`}
             onClick={() => setActiveTab('bookings')}
             style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0, background: activeTab !== 'bookings' ? '#e4e4e7' : '', color: activeTab !== 'bookings' ? '#3f3f46' : '' }}
           >
             <CalendarCheck size={18} /> Booking Requests
+          </button>
+          <button 
+            className={`btn ${activeTab === 'users' ? 'btn-primary' : ''}`}
+            onClick={() => setActiveTab('users')}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0, background: activeTab !== 'users' ? '#e4e4e7' : '', color: activeTab !== 'users' ? '#3f3f46' : '' }}
+          >
+            <Users size={18} /> User Access
           </button>
         </div>
       </div>
