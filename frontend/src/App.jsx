@@ -56,10 +56,7 @@ const NavBar = () => {
 
       {token ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-          
-          {/* THE NEW BELL COMPONENT GOES HERE */}
           <NotificationBell />
-
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', borderLeft: '1px solid #e4e4e7', paddingLeft: '1.5rem' }}>
             {picture && <img src={picture} alt="Profile" style={{ width: '32px', height: '32px', borderRadius: '50%' }} />}
             <button onClick={handleLogout} className="btn" style={{ background: '#f4f4f5', color: '#ef4444', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
@@ -75,9 +72,6 @@ const NavBar = () => {
 };
 
 function App() {
-  // Grab the token so the Router knows if the user is logged in
-  const token = localStorage.getItem('jwt_token');
-
   return (
     <Router>
       <NavBar />
@@ -95,14 +89,6 @@ function App() {
 
         {/* Bookings */}
         <Route path="/bookings" element={<PrivateRoute><BookingDashboard /></PrivateRoute>} />
-        <Route path="/bookings" element={token ? <BookingDashboard /> : <Navigate to="/login" />} />
-        
-        {/* The Admin Dashboard is wrapped in protection logic */}
-        <Route path="/admin" element={
-          <AdminRoute>
-            <AdminDashboard />
-          </AdminRoute>
-        } />
       </Routes>
     </Router>
   )
