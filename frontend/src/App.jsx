@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom'
 import UserDashboard from './pages/UserDashboard'
 import AdminDashboard from './pages/AdminDashboard'
+import BookingDashboard from './pages/BookingDashboard'
 import LoginPage from './pages/LoginPage'
 import { LogOut } from 'lucide-react'
 import './index.css'
@@ -30,6 +31,7 @@ const NavBar = () => {
     <nav style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
       <div style={{ display: 'flex', gap: '1.5rem' }}>
         <Link to="/">Campus Dashboard</Link>
+        {token && <Link to="/bookings">My Bookings</Link>}
         {role === 'ADMIN' && <Link to="/admin">Admin Panel</Link>}
       </div>
       
@@ -48,13 +50,20 @@ const NavBar = () => {
 };
 
 function App() {
+  // NEW: Grab the token so the Router knows if the user is logged in
+  const token = localStorage.getItem('jwt_token');
+
   return (
     <Router>
       <NavBar />
       <Routes>
         <Route path="/" element={<UserDashboard />} />
         <Route path="/login" element={<LoginPage />} />
-        {/* The Admin Dashboard is now wrapped in our protection logic! */}
+        
+        {/* Now this line will work perfectly! */}
+        <Route path="/bookings" element={token ? <BookingDashboard /> : <Navigate to="/login" />} />
+        
+        {/* The Admin Dashboard is wrapped in our protection logic */}
         <Route path="/admin" element={
           <AdminRoute>
             <AdminDashboard />
