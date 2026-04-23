@@ -19,6 +19,7 @@ const PrivateRoute = ({ children }) => {
 };
 
 // Protects the Admin route
+// A wrapper to protect the Admin route
 const AdminRoute = ({ children }) => {
   const role = localStorage.getItem('user_role');
   if (role !== 'ADMIN') return <Navigate to="/login" />;
@@ -29,6 +30,24 @@ const AdminRoute = ({ children }) => {
 const StaffRoute = ({ children }) => {
   const role = localStorage.getItem('user_role');
   if (role !== 'ADMIN' && role !== 'TECHNICIAN') return <Navigate to="/" />;
+  return children;
+};
+
+// NEW: A wrapper to protect ANY route that requires a logged-in user
+const ProtectedRoute = ({ children }) => {
+  const token = localStorage.getItem('jwt_token');
+  if (!token) {
+    return <Navigate to="/login" />;
+  }
+  return children;
+};
+
+// NEW: A wrapper to protect ANY route that requires a logged-in user
+const ProtectedRoute = ({ children }) => {
+  const token = localStorage.getItem('jwt_token');
+  if (!token) {
+    return <Navigate to="/login" />;
+  }
   return children;
 };
 
@@ -58,7 +77,6 @@ const NavBar = () => {
       {token ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
           
-          {/* THE NEW BELL COMPONENT GOES HERE */}
           <NotificationBell />
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', borderLeft: '1px solid #e4e4e7', paddingLeft: '1.5rem' }}>
@@ -76,15 +94,14 @@ const NavBar = () => {
 };
 
 function App() {
-  // Grab the token so the Router knows if the user is logged in
-  const token = localStorage.getItem('jwt_token');
-
   return (
     <Router>
       <NavBar />
       <Routes>
         <Route path="/" element={<UserDashboard />} />
         <Route path="/login" element={<LoginPage />} />
+        
+        {/* UPDATED: Wrapped in our new ProtectedRoute logic */}
 
         {/* Module C Routes */}
         <Route path="/report-issue" element={<PrivateRoute><ReportTicketPage /></PrivateRoute>} />
@@ -96,7 +113,11 @@ function App() {
 
         {/* Bookings */}
         <Route path="/bookings" element={<PrivateRoute><BookingDashboard /></PrivateRoute>} />
-        <Route path="/bookings" element={token ? <BookingDashboard /> : <Navigate to="/login" />} />
+        <Route path="/bookings" element={
+          <ProtectedRoute>
+            <BookingDashboard />
+          </ProtectedRoute>
+        } />
         
         {/* The Admin Dashboard is wrapped in protection logic */}
         <Route path="/admin" element={

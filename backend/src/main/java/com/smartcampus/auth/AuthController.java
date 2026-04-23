@@ -82,7 +82,8 @@ public class AuthController {
                         savedUser.getEmail(), 
                         "Welcome to Smart Campus! 🎉", 
                         "Your account has been created successfully. You can now book facilities.", 
-                        Notification.NotificationType.SUCCESS
+                        Notification.NotificationType.SUCCESS,
+                        false
                     );
                     
                     return savedUser;
