@@ -68,9 +68,6 @@ const NavBar = () => {
 };
 
 function App() {
-  // NEW: Grab the token so the Router knows if the user is logged in
-  const token = localStorage.getItem('jwt_token');
-
   return (
     <Router>
       <NavBar />
@@ -86,15 +83,8 @@ function App() {
         {/* Admin Panel */}
         <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
 
-        {/* Now this line will work perfectly! */}
-        <Route path="/bookings" element={token ? <BookingDashboard /> : <Navigate to="/login" />} />
-
-        {/* The Admin Dashboard is wrapped in our protection logic */}
-        <Route path="/admin" element={
-          <AdminRoute>
-            <AdminDashboard />
-          </AdminRoute>
-        } />
+        {/* Bookings */}
+        <Route path="/bookings" element={<PrivateRoute><BookingDashboard /></PrivateRoute>} />
       </Routes>
     </Router>
   )

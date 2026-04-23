@@ -20,6 +20,10 @@ export default function BookingDashboard() {
     purpose: ''
   })
 
+  const authHeader = () => ({
+    headers: { Authorization: `Bearer ${localStorage.getItem('jwt_token')}` }
+  })
+
   useEffect(() => {
     fetchData()
   }, [])
@@ -28,7 +32,7 @@ export default function BookingDashboard() {
     try {
       const [resResponse, bookingsResponse] = await Promise.all([
         axios.get('http://localhost:8080/api/resources'),
-        axios.get('http://localhost:8080/api/bookings/my-bookings')
+        axios.get('http://localhost:8080/api/bookings/my-bookings', authHeader())
       ])
       
       const activeResources = resResponse.data.filter(r => r.status === 'ACTIVE')
@@ -55,7 +59,7 @@ export default function BookingDashboard() {
     e.preventDefault()
     setError('')
     try {
-      await axios.post('http://localhost:8080/api/bookings', formData)
+      await axios.post('http://localhost:8080/api/bookings', formData, authHeader())
       setFormData(prev => ({ ...prev, startTime: '', endTime: '', purpose: '' }))
       fetchData()
       alert("Booking request submitted! Waiting for Admin approval.")
@@ -67,7 +71,7 @@ export default function BookingDashboard() {
   const handleCancelBooking = async (bookingId) => {
     if (window.confirm('Are you sure you want to cancel this reservation?')) {
       try {
-        await axios.put(`http://localhost:8080/api/bookings/${bookingId}/cancel`)
+        await axios.put(`http://localhost:8080/api/bookings/${bookingId}/cancel`, {}, authHeader())
         fetchData()
       } catch (err) {
         setError('Failed to cancel booking.')
@@ -77,7 +81,7 @@ export default function BookingDashboard() {
 
   const handleCheckIn = async (bookingId) => {
     try {
-      await axios.put(`http://localhost:8080/api/bookings/${bookingId}/check-in`)
+      await axios.put(`http://localhost:8080/api/bookings/${bookingId}/check-in`, {}, authHeader())
       fetchData() 
       alert("Checked in successfully! The room is yours.")
     } catch (err) {
