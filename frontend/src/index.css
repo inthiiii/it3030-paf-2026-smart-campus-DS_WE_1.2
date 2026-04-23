@@ -6,12 +6,13 @@
 
 body {
   margin: 0;
-  padding: 2rem;
+  padding: 0;
 }
 
 .dashboard {
   max-width: 1200px;
   margin: 0 auto;
+  padding: 2rem;
 }
 
 .header {
@@ -20,7 +21,7 @@ body {
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 1.5rem;
 }
 
@@ -73,20 +74,16 @@ body {
 
 /* Navigation Bar */
 nav {
-  background: white;
-  padding: 1rem 2rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-  display: flex;
-  gap: 1.5rem;
-  margin-bottom: 2rem;
+  margin: 0;
 }
 nav a {
   text-decoration: none;
   color: #52525b;
   font-weight: 600;
-  transition: color 0.2s;
+  transition: color 0.2s, background 0.2s;
+  border-radius: 8px;
 }
-nav a:hover { color: #18181b; }
+nav a:hover { color: #18181b; background: #f4f4f5; }
 
 /* Admin Form Styles */
 .form-container {

@@ -172,7 +172,7 @@ export default function UserDashboard() {
                 <div key={resource.id} className="card" onClick={() => handleNodeClick(resource)} style={{ cursor: 'pointer', overflow: 'hidden', padding: 0 }}>
                   
                   {/* The Image Header with the SINGLE Status Badge */}
-                  <div style={{ height: '160px', width: '100%', background: '#f4f4f5', position: 'relative' }}>
+                  <div style={{ height: '200px', width: '100%', background: '#f4f4f5', position: 'relative' }}>
                     <img 
                       src={resource.imageUrl || 'https://images.unsplash.com/photo-1598620617377-3bfb505b4384?auto=format&fit=crop&q=80&w=800'} 
                       alt={resource.name} 
