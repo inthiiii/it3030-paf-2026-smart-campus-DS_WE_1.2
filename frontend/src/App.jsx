@@ -1,13 +1,14 @@
-import { BrowserRouter as Router, Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Link, useNavigate, Navigate, useLocation } from 'react-router-dom'
 import UserDashboard from './pages/UserDashboard'
 import UserHome from './pages/UserHome'
 import AdminDashboard from './pages/AdminDashboard'
 import AdminHome from './pages/AdminHome'
 import BookingDashboard from './pages/BookingDashboard'
 import LoginPage from './pages/LoginPage'
+import LandingPage from './pages/LandingPage'
 import NotificationBell from './components/NotificationBell'
 import UserProfile from './pages/UserProfile'
-import { LogOut, LayoutDashboard, Server, CalendarCheck, Shield, Search } from 'lucide-react'
+import { LogOut, LayoutDashboard, CalendarCheck, Shield, Search } from 'lucide-react'
 import './index.css'
 
 // A wrapper to protect the Admin route
@@ -28,17 +29,30 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
+// Smart Home Route — redirects based on login state & role
+const HomeRoute = () => {
+  const token = localStorage.getItem('jwt_token');
+  const role = localStorage.getItem('user_role');
+  if (token && role === 'ADMIN') return <Navigate to="/admin" />;
+  if (token) return <Navigate to="/dashboard" />;
+  return <LandingPage />;
+};
+
 // Navigation Component
 const NavBar = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const token = localStorage.getItem('jwt_token');
   const role = localStorage.getItem('user_role');
   const picture = localStorage.getItem('user_picture');
-  const currentPath = window.location.pathname;
+  const currentPath = location.pathname;
+
+  // Hide nav on landing page and login page
+  if (!token && (currentPath === '/' || currentPath === '/login')) return null;
 
   const handleLogout = () => {
     localStorage.clear();
-    navigate('/login');
+    navigate('/');
   };
 
   const NavLink = ({ to, icon: Icon, children }) => {
@@ -74,7 +88,7 @@ const NavBar = () => {
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
         {/* Brand */}
         <div
-          onClick={() => navigate(role === 'ADMIN' ? '/admin' : '/')}
+          onClick={() => navigate(role === 'ADMIN' ? '/admin' : '/dashboard')}
           style={{
             fontSize: '1.05rem', fontWeight: 800, color: '#18181b',
             marginRight: '1.25rem', cursor: 'pointer', display: 'flex',
@@ -87,9 +101,7 @@ const NavBar = () => {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             color: 'white', fontSize: '0.75rem', fontWeight: 900
           }}>SC</div>
-          <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1 }}>
-            <span style={{ fontSize: '0.85rem' }}>Smart Campus</span>
-          </span>
+          <span style={{ fontSize: '0.85rem' }}>Smart Campus</span>
         </div>
 
         {/* Separator */}
@@ -97,15 +109,13 @@ const NavBar = () => {
 
         {/* Role-based Navigation */}
         {role === 'ADMIN' ? (
-          /* ADMIN NAV: Only Admin Home + Manage */
           <>
             <NavLink to="/admin" icon={LayoutDashboard}>Admin Home</NavLink>
             <NavLink to="/admin/manage" icon={Shield}>Manage</NavLink>
           </>
         ) : (
-          /* USER NAV: Home + Browse Resources + My Bookings */
           <>
-            {token && <NavLink to="/" icon={LayoutDashboard}>Home</NavLink>}
+            {token && <NavLink to="/dashboard" icon={LayoutDashboard}>Home</NavLink>}
             <NavLink to="/resources" icon={Search}>Browse Resources</NavLink>
             {token && <NavLink to="/bookings" icon={CalendarCheck}>My Bookings</NavLink>}
           </>
@@ -155,40 +165,44 @@ function App() {
     <Router>
       <NavBar />
       <Routes>
-        {/* User Home — landing page for logged-in users */}
-        <Route path="/" element={
+        {/* Public Landing — or redirect if logged in */}
+        <Route path="/" element={<HomeRoute />} />
+
+        {/* Login */}
+        <Route path="/login" element={<LoginPage />} />
+
+        {/* User Dashboard Home — for logged-in users */}
+        <Route path="/dashboard" element={
           <ProtectedRoute>
             <UserHome />
           </ProtectedRoute>
         } />
 
-        {/* Public resource browser (was previously at /) */}
+        {/* Public resource browser */}
         <Route path="/resources" element={<UserDashboard />} />
 
-        <Route path="/login" element={<LoginPage />} />
-        
-        {/* Wrapped in our ProtectedRoute logic */}
+        {/* Bookings */}
         <Route path="/bookings" element={
           <ProtectedRoute>
             <BookingDashboard />
           </ProtectedRoute>
         } />
 
-        {/* NEW: User Profile Route */}
+        {/* User Profile */}
         <Route path="/profile" element={
           <ProtectedRoute>
             <UserProfile />
           </ProtectedRoute>
         } />
-        
-        {/* Admin Home — landing page for admins */}
+
+        {/* Admin Home */}
         <Route path="/admin" element={
           <AdminRoute>
             <AdminHome />
           </AdminRoute>
         } />
 
-        {/* Admin Manage — the existing admin control panel */}
+        {/* Admin Manage */}
         <Route path="/admin/manage" element={
           <AdminRoute>
             <AdminDashboard />
