@@ -4,6 +4,7 @@ import AdminDashboard from './pages/AdminDashboard'
 import BookingDashboard from './pages/BookingDashboard'
 import LoginPage from './pages/LoginPage'
 import NotificationBell from './components/NotificationBell'
+import UserProfile from './pages/UserProfile'
 import { LogOut } from 'lucide-react'
 import './index.css'
 
@@ -16,7 +17,7 @@ const AdminRoute = ({ children }) => {
   return children;
 };
 
-// NEW: A wrapper to protect ANY route that requires a logged-in user
+// A wrapper to protect ANY route that requires a logged-in user
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem('jwt_token');
   if (!token) {
@@ -51,7 +52,12 @@ const NavBar = () => {
           <NotificationBell />
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', borderLeft: '1px solid #e4e4e7', paddingLeft: '1.5rem' }}>
-            {picture && <img src={picture} alt="Profile" style={{ width: '32px', height: '32px', borderRadius: '50%' }} />}
+            
+            {/* UPDATED: Clickable Profile Picture routing to settings */}
+            <Link to="/profile">
+              {picture && <img src={picture} alt="Profile" title="Edit Profile" style={{ width: '32px', height: '32px', borderRadius: '50%', border: '2px solid transparent', cursor: 'pointer' }} />}
+            </Link>
+
             <button onClick={handleLogout} className="btn" style={{ background: '#f4f4f5', color: '#ef4444', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
               <LogOut size={16} /> Logout
             </button>
@@ -72,10 +78,17 @@ function App() {
         <Route path="/" element={<UserDashboard />} />
         <Route path="/login" element={<LoginPage />} />
         
-        {/* UPDATED: Wrapped in our new ProtectedRoute logic */}
+        {/* Wrapped in our ProtectedRoute logic */}
         <Route path="/bookings" element={
           <ProtectedRoute>
             <BookingDashboard />
+          </ProtectedRoute>
+        } />
+
+        {/* NEW: User Profile Route */}
+        <Route path="/profile" element={
+          <ProtectedRoute>
+            <UserProfile />
           </ProtectedRoute>
         } />
         

@@ -92,17 +92,28 @@ export default function AdminDashboard() {
   const handleRoleChange = async (userId, newRole) => {
     try {
       await axios.put(`http://localhost:8080/api/users/${userId}/role`, { role: newRole })
-      fetchUsers() // Refresh the list to show the new role
+      fetchUsers() 
     } catch (error) {
       console.error("Error updating role:", error)
       alert("Failed to update role. Check console.")
     }
   }
 
+  // NEW: Handle Account Status Change (Suspend/Activate)
+  const handleStatusChange = async (userId, newStatus) => {
+    try {
+      await axios.put(`http://localhost:8080/api/users/${userId}/status`, { status: newStatus })
+      fetchUsers() 
+    } catch (error) {
+      console.error("Error updating status:", error)
+      alert("Failed to update account status. Check console.")
+    }
+  }
+
   const handleBookingAction = async (id, newStatus) => {
     try {
       await axios.put(`http://localhost:8080/api/bookings/${id}/status`, { status: newStatus })
-      fetchAllBookings() // Refresh the list
+      fetchAllBookings() 
     } catch (error) {
       console.error("Failed to update booking:", error)
     }
@@ -182,7 +193,7 @@ export default function AdminDashboard() {
         </>
       )}
 
-      {/* --- USERS TAB --- */}
+      {/* --- USERS TAB (UPGRADED) --- */}
       {activeTab === 'users' && (
         <div className="form-container">
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', color: '#ef4444' }}>
@@ -196,32 +207,50 @@ export default function AdminDashboard() {
                 <th style={{ padding: '1rem 0.5rem' }}>User</th>
                 <th style={{ padding: '1rem 0.5rem' }}>Email</th>
                 <th style={{ padding: '1rem 0.5rem' }}>System Role</th>
-                <th style={{ padding: '1rem 0.5rem' }}>Action</th>
+                <th style={{ padding: '1rem 0.5rem' }}>Account Status</th>
               </tr>
             </thead>
             <tbody>
               {users.map(user => (
-                <tr key={user.id} style={{ borderBottom: '1px solid #f4f4f5' }}>
+                <tr key={user.id} style={{ borderBottom: '1px solid #f4f4f5', opacity: user.accountStatus === 'DELETED' ? 0.6 : 1 }}>
                   <td style={{ padding: '1rem 0.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <img src={user.pictureUrl} alt="" style={{ width: '32px', height: '32px', borderRadius: '50%' }} />
-                    <strong>{user.name}</strong>
+                    <img src={user.pictureUrl} alt="" style={{ width: '32px', height: '32px', borderRadius: '50%', filter: user.accountStatus === 'DELETED' ? 'grayscale(100%)' : 'none' }} />
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <strong>{user.name}</strong>
+                      {user.accountStatus === 'SUSPENDED' && <span style={{ fontSize: '0.75rem', color: '#ef4444', fontWeight: 'bold' }}>Suspended Access</span>}
+                      {user.accountStatus === 'DELETED' && <span style={{ fontSize: '0.75rem', color: '#71717a', fontWeight: 'bold' }}>Soft Deleted</span>}
+                    </div>
                   </td>
                   <td style={{ padding: '1rem 0.5rem', color: '#52525b' }}>{user.email}</td>
-                  <td style={{ padding: '1rem 0.5rem' }}>
-                    <span className={`status-badge status-${user.role === 'ADMIN' ? 'OUT_OF_SERVICE' : user.role === 'TECHNICIAN' ? 'MAINTENANCE' : 'ACTIVE'}`}>
-                      {user.role}
-                    </span>
-                  </td>
                   <td style={{ padding: '1rem 0.5rem' }}>
                     <select 
                       value={user.role} 
                       onChange={(e) => handleRoleChange(user.id, e.target.value)}
                       style={{ padding: '0.4rem', borderRadius: '6px', border: '1px solid #d4d4d8' }}
-                      disabled={user.email === 'your.email@gmail.com'} // Prevent the Master Admin from demoting themselves!
+                      disabled={user.email === 'ihthishamirshad781@gmail.com' || user.accountStatus === 'DELETED'} 
                     >
                       <option value="USER">User (Student/Staff)</option>
                       <option value="TECHNICIAN">Technician</option>
                       <option value="ADMIN">Administrator</option>
+                    </select>
+                  </td>
+                  <td style={{ padding: '1rem 0.5rem' }}>
+                    <select 
+                      value={user.accountStatus || 'ACTIVE'} 
+                      onChange={(e) => handleStatusChange(user.id, e.target.value)}
+                      style={{ 
+                        padding: '0.4rem', 
+                        borderRadius: '6px', 
+                        border: `1px solid ${user.accountStatus === 'SUSPENDED' ? '#ef4444' : '#d4d4d8'}`,
+                        backgroundColor: user.accountStatus === 'SUSPENDED' ? '#fef2f2' : 'white',
+                        color: user.accountStatus === 'SUSPENDED' ? '#991b1b' : 'inherit',
+                        fontWeight: user.accountStatus === 'SUSPENDED' ? 'bold' : 'normal'
+                      }}
+                      disabled={user.email === 'ihthishamirshad781@gmail.com'} 
+                    >
+                      <option value="ACTIVE">Active</option>
+                      <option value="SUSPENDED">Suspended</option>
+                      <option value="DELETED">Deleted</option>
                     </select>
                   </td>
                 </tr>
@@ -230,7 +259,8 @@ export default function AdminDashboard() {
           </table>
         </div>
       )}
-    {/* --- AUDIT LOGS TAB --- */}
+      
+      {/* --- AUDIT LOGS TAB --- */}
       {activeTab === 'logs' && (
         <div className="form-container" style={{ background: '#09090b', color: '#a1a1aa', fontFamily: 'monospace' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', color: '#10b981' }}>
@@ -245,8 +275,7 @@ export default function AdminDashboard() {
               logs.map((log) => {
                 const date = new Date(log.timestamp).toLocaleString()
                 
-                // NEW: Make the text red and bold if it's suspicious
-                const isSuspicious = log.action === 'SUSPICIOUS_LOGIN';
+                const isSuspicious = log.action === 'SUSPICIOUS_LOGIN' || log.action === 'FAILED_LOGIN';
                 const actionColor = isSuspicious ? '#ef4444' : '#f59e0b';
                 
                 return (
@@ -265,6 +294,7 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
+      
       {/* --- BOOKING REQUESTS TAB --- */}
       {activeTab === 'bookings' && (
         <div className="form-container">
@@ -295,7 +325,6 @@ export default function AdminDashboard() {
                   </td>
                   <td style={{ padding: '1rem 0.5rem' }}>
                     {booking.purpose}
-                    {/* Display the AI Risk Badge */}
                     {booking.aiRiskScore !== null && (
                       <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', fontWeight: 'bold', color: booking.aiRiskScore > 40 ? '#ef4444' : '#22c55e' }}>
                         🤖 AI Risk: {booking.aiRiskScore}%
