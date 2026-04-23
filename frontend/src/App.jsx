@@ -8,7 +8,6 @@ import MyTicketsPage from './pages/tickets/MyTicketsPage'
 import AdminTicketsPage from './pages/tickets/AdminTicketsPage'
 import { LogOut, AlertTriangle, ClipboardList, Settings } from 'lucide-react'
 import NotificationBell from './components/NotificationBell'
-import { LogOut } from 'lucide-react'
 import './index.css'
 
 // Protects routes that require login
@@ -19,7 +18,6 @@ const PrivateRoute = ({ children }) => {
 };
 
 // Protects the Admin route
-// A wrapper to protect the Admin route
 const AdminRoute = ({ children }) => {
   const role = localStorage.getItem('user_role');
   if (role !== 'ADMIN') return <Navigate to="/login" />;
@@ -30,24 +28,6 @@ const AdminRoute = ({ children }) => {
 const StaffRoute = ({ children }) => {
   const role = localStorage.getItem('user_role');
   if (role !== 'ADMIN' && role !== 'TECHNICIAN') return <Navigate to="/" />;
-  return children;
-};
-
-// NEW: A wrapper to protect ANY route that requires a logged-in user
-const ProtectedRoute = ({ children }) => {
-  const token = localStorage.getItem('jwt_token');
-  if (!token) {
-    return <Navigate to="/login" />;
-  }
-  return children;
-};
-
-// NEW: A wrapper to protect ANY route that requires a logged-in user
-const ProtectedRoute = ({ children }) => {
-  const token = localStorage.getItem('jwt_token');
-  if (!token) {
-    return <Navigate to="/login" />;
-  }
   return children;
 };
 
@@ -76,9 +56,7 @@ const NavBar = () => {
 
       {token ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-          
           <NotificationBell />
-
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', borderLeft: '1px solid #e4e4e7', paddingLeft: '1.5rem' }}>
             {picture && <img src={picture} alt="Profile" style={{ width: '32px', height: '32px', borderRadius: '50%' }} />}
             <button onClick={handleLogout} className="btn" style={{ background: '#f4f4f5', color: '#ef4444', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
@@ -100,8 +78,6 @@ function App() {
       <Routes>
         <Route path="/" element={<UserDashboard />} />
         <Route path="/login" element={<LoginPage />} />
-        
-        {/* UPDATED: Wrapped in our new ProtectedRoute logic */}
 
         {/* Module C Routes */}
         <Route path="/report-issue" element={<PrivateRoute><ReportTicketPage /></PrivateRoute>} />
@@ -113,18 +89,6 @@ function App() {
 
         {/* Bookings */}
         <Route path="/bookings" element={<PrivateRoute><BookingDashboard /></PrivateRoute>} />
-        <Route path="/bookings" element={
-          <ProtectedRoute>
-            <BookingDashboard />
-          </ProtectedRoute>
-        } />
-        
-        {/* The Admin Dashboard is wrapped in protection logic */}
-        <Route path="/admin" element={
-          <AdminRoute>
-            <AdminDashboard />
-          </AdminRoute>
-        } />
       </Routes>
     </Router>
   )
