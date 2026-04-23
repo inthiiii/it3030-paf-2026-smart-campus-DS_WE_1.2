@@ -7,6 +7,8 @@ import ReportTicketPage from './pages/tickets/ReportTicketPage'
 import MyTicketsPage from './pages/tickets/MyTicketsPage'
 import AdminTicketsPage from './pages/tickets/AdminTicketsPage'
 import { LogOut, AlertTriangle, ClipboardList, Settings } from 'lucide-react'
+import NotificationBell from './components/NotificationBell'
+import { LogOut } from 'lucide-react'
 import './index.css'
 
 // Protects routes that require login
@@ -54,11 +56,17 @@ const NavBar = () => {
       </div>
 
       {token ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          {picture && <img src={picture} alt="Profile" style={{ width: '32px', height: '32px', borderRadius: '50%' }} />}
-          <button onClick={handleLogout} className="btn" style={{ background: '#f4f4f5', color: '#ef4444', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <LogOut size={16} /> Logout
-          </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+          
+          {/* THE NEW BELL COMPONENT GOES HERE */}
+          <NotificationBell />
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', borderLeft: '1px solid #e4e4e7', paddingLeft: '1.5rem' }}>
+            {picture && <img src={picture} alt="Profile" style={{ width: '32px', height: '32px', borderRadius: '50%' }} />}
+            <button onClick={handleLogout} className="btn" style={{ background: '#f4f4f5', color: '#ef4444', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
+              <LogOut size={16} /> Logout
+            </button>
+          </div>
         </div>
       ) : (
         <Link to="/login" className="btn btn-primary" style={{ marginTop: 0 }}>Login</Link>
@@ -68,6 +76,9 @@ const NavBar = () => {
 };
 
 function App() {
+  // Grab the token so the Router knows if the user is logged in
+  const token = localStorage.getItem('jwt_token');
+
   return (
     <Router>
       <NavBar />
@@ -85,6 +96,14 @@ function App() {
 
         {/* Bookings */}
         <Route path="/bookings" element={<PrivateRoute><BookingDashboard /></PrivateRoute>} />
+        <Route path="/bookings" element={token ? <BookingDashboard /> : <Navigate to="/login" />} />
+        
+        {/* The Admin Dashboard is wrapped in protection logic */}
+        <Route path="/admin" element={
+          <AdminRoute>
+            <AdminDashboard />
+          </AdminRoute>
+        } />
       </Routes>
     </Router>
   )

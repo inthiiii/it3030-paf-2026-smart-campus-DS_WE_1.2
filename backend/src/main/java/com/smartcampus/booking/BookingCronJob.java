@@ -1,6 +1,7 @@
 package com.smartcampus.booking;
 
 import com.smartcampus.audit.AuditService;
+import com.smartcampus.notification.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -16,6 +17,9 @@ public class BookingCronJob {
 
     @Autowired
     private AuditService auditService;
+
+    @Autowired
+    private NotificationService notificationService;
 
     // This runs every 60 seconds (60000 milliseconds)
     @Scheduled(fixedRate = 60000)
@@ -40,6 +44,15 @@ public class BookingCronJob {
                     "SYSTEM_CRON", 
                     "AUTO_RELEASE", 
                     "Auto-cancelled booking " + ghost.getId() + " for " + ghost.getUserEmail() + " due to No-Show."
+                );
+
+                // Alert the User they missed their slot
+                notificationService.sendNotification(
+                ghost.getUserEmail(),
+                "Booking Forfeited 👻",
+                "You failed to check in. Your booking for " + ghost.getResourceId().substring(0,6) + " has been auto-released.",
+                com.smartcampus.notification.Notification.NotificationType.ERROR,
+                true // Urgent!
                 );
             }
         }
