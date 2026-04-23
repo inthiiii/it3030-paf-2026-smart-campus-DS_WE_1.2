@@ -4,11 +4,11 @@ import { Users, Server, ShieldAlert, Activity, CalendarCheck } from 'lucide-reac
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('resources') // 'resources' or 'users'
-  
+
   // Resource State
   const [resources, setResources] = useState([])
   const [formData, setFormData] = useState({
-    name: '', type: 'LECTURE_HALL', capacity: 0, location: '', status: 'ACTIVE', features: ''
+    name: '', type: 'LECTURE_HALL', capacity: 0, location: '', status: 'ACTIVE', features: '', imageUrl: ''
   })
   const [editingId, setEditingId] = useState(null)
 
@@ -57,7 +57,7 @@ export default function AdminDashboard() {
 
   // --- Resource Handlers ---
   const handleResourceChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value })
-  
+
   const handleResourceSubmit = async (e) => {
     e.preventDefault()
     const payload = { ...formData, features: formData.features.split(',').map(f => f.trim()).filter(f => f !== '') }
@@ -68,7 +68,7 @@ export default function AdminDashboard() {
       } else {
         await axios.post('http://localhost:8080/api/resources', payload)
       }
-      setFormData({ name: '', type: 'LECTURE_HALL', capacity: 0, location: '', status: 'ACTIVE', features: '' })
+      setFormData({ name: '', type: 'LECTURE_HALL', capacity: 0, location: '', status: 'ACTIVE', features: '', imageUrl: '' })
       fetchResources()
     } catch (error) {
       console.error("Error saving resource:", error)
@@ -84,7 +84,7 @@ export default function AdminDashboard() {
 
   const handleEditResource = (resource) => {
     setEditingId(resource.id)
-    setFormData({ ...resource, features: resource.features.join(', ') })
+    setFormData({ ...resource, features: resource.features.join(', '), imageUrl: resource.imageUrl || '' })
     window.scrollTo(0, 0)
   }
 
@@ -92,7 +92,7 @@ export default function AdminDashboard() {
   const handleRoleChange = async (userId, newRole) => {
     try {
       await axios.put(`http://localhost:8080/api/users/${userId}/role`, { role: newRole })
-      fetchUsers() 
+      fetchUsers()
     } catch (error) {
       console.error("Error updating role:", error)
       alert("Failed to update role. Check console.")
@@ -103,7 +103,7 @@ export default function AdminDashboard() {
   const handleStatusChange = async (userId, newStatus) => {
     try {
       await axios.put(`http://localhost:8080/api/users/${userId}/status`, { status: newStatus })
-      fetchUsers() 
+      fetchUsers()
     } catch (error) {
       console.error("Error updating status:", error)
       alert("Failed to update account status. Check console.")
@@ -113,7 +113,7 @@ export default function AdminDashboard() {
   const handleBookingAction = async (id, newStatus) => {
     try {
       await axios.put(`http://localhost:8080/api/bookings/${id}/status`, { status: newStatus })
-      fetchAllBookings() 
+      fetchAllBookings()
     } catch (error) {
       console.error("Failed to update booking:", error)
     }
@@ -126,31 +126,31 @@ export default function AdminDashboard() {
           <h1>Admin Control Panel</h1>
           <p>Manage Campus Facilities & User Access</p>
         </div>
-        
+
         {/* Tab Navigation */}
         <div style={{ display: 'flex', gap: '1rem' }}>
-          <button 
+          <button
             className={`btn ${activeTab === 'resources' ? 'btn-primary' : ''}`}
             onClick={() => setActiveTab('resources')}
             style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0, background: activeTab !== 'resources' ? '#e4e4e7' : '', color: activeTab !== 'resources' ? '#3f3f46' : '' }}
           >
             <Server size={18} /> Resources
           </button>
-          <button 
+          <button
             className={`btn ${activeTab === 'logs' ? 'btn-primary' : ''}`}
             onClick={() => setActiveTab('logs')}
             style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0, background: activeTab !== 'logs' ? '#e4e4e7' : '', color: activeTab !== 'logs' ? '#3f3f46' : '' }}
           >
             <Activity size={18} /> System Logs
           </button>
-          <button 
+          <button
             className={`btn ${activeTab === 'users' ? 'btn-primary' : ''}`}
             onClick={() => setActiveTab('users')}
             style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0, background: activeTab !== 'users' ? '#e4e4e7' : '', color: activeTab !== 'users' ? '#3f3f46' : '' }}
           >
             <Users size={18} /> User Access
           </button>
-          <button 
+          <button
             className={`btn ${activeTab === 'bookings' ? 'btn-primary' : ''}`}
             onClick={() => setActiveTab('bookings')}
             style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0, background: activeTab !== 'bookings' ? '#e4e4e7' : '', color: activeTab !== 'bookings' ? '#3f3f46' : '' }}
@@ -173,6 +173,23 @@ export default function AdminDashboard() {
                 <div className="form-group"><label>Location</label><input type="text" name="location" value={formData.location} onChange={handleResourceChange} required /></div>
                 <div className="form-group"><label>Status</label><select name="status" value={formData.status} onChange={handleResourceChange}><option value="ACTIVE">Active</option><option value="MAINTENANCE">Maintenance</option><option value="OUT_OF_SERVICE">Out of Service</option></select></div>
                 <div className="form-group"><label>Features (comma separated)</label><input type="text" name="features" value={formData.features} onChange={handleResourceChange} /></div>
+                {/* IMAGE INPUT */}
+                <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                  <label>Cover Image URL</label>
+                  <input type="url" name="imageUrl" placeholder="https://example.com/image.jpg" value={formData.imageUrl || ''} onChange={handleResourceChange} />
+                  {formData.imageUrl && (
+                    <div style={{ marginTop: '0.5rem', borderRadius: '8px', overflow: 'hidden', height: '120px', background: '#f4f4f5' }}>
+                      <img
+                        src={formData.imageUrl}
+                        alt="Preview"
+                        referrerPolicy="no-referrer"
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        onError={(e) => { e.target.style.display = 'none' }}
+                        onLoad={(e) => { e.target.style.display = 'block' }}
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
               <button type="submit" className="btn btn-primary">{editingId ? 'Update Resource' : 'Save New Resource'}</button>
             </form>
@@ -185,40 +202,52 @@ export default function AdminDashboard() {
               const healthColor = health > 70 ? '#22c55e' : health > 25 ? '#eab308' : '#ef4444';
 
               return (
-                <div key={resource.id} className="card" style={{ border: resource.maintenanceAlert ? '2px solid #ef4444' : '1px solid #e4e4e7' }}>
-                  
-                  {/* Card Header */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div key={resource.id} className="card" style={{ border: resource.maintenanceAlert ? '2px solid #ef4444' : '1px solid #e4e4e7', overflow: 'hidden', padding: 0 }}>
+
+                  {/* Card Image Header */}
+                  <div style={{ height: '160px', width: '100%', background: '#f4f4f5', position: 'relative' }}>
+                    <img
+                      src={resource.imageUrl || 'https://images.unsplash.com/photo-1598620617377-3bfb505b4384?auto=format&fit=crop&q=80&w=800'}
+                      alt={resource.name}
+                      referrerPolicy="no-referrer"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      onError={(e) => { if (!e.target.dataset.fallback) { e.target.dataset.fallback = '1'; e.target.src = 'https://images.unsplash.com/photo-1598620617377-3bfb505b4384?auto=format&fit=crop&q=80&w=800'; } }}
+                    />
+                    <span className={`status-badge status-${resource.status}`} style={{ position: 'absolute', top: '0.75rem', right: '0.75rem', boxShadow: '0 4px 6px rgba(0,0,0,0.3)' }}>
+                      {resource.status.replace(/_/g, ' ')}
+                    </span>
+                    {resource.maintenanceAlert && (
+                      <span title="AI Maintenance Alert" style={{ position: 'absolute', top: '0.75rem', left: '0.75rem', animation: 'pulse-red 2s infinite', fontSize: '1.25rem' }}>⚠️</span>
+                    )}
+                  </div>
+
+                  {/* Card Body */}
+                  <div style={{ padding: '1.25rem' }}>
                     <h3 style={{ margin: '0 0 0.5rem 0' }}>{resource.name}</h3>
-                    {resource.maintenanceAlert && (
-                      <span title="AI Maintenance Alert" style={{ animation: 'pulse-red 2s infinite' }}>⚠️</span>
-                    )}
-                  </div>
-                  
-                  <p style={{ margin: 0, fontSize: '0.9rem', color: '#52525b' }}>
-                    {resource.type} • {resource.location}
-                  </p>
+                    <p style={{ margin: 0, fontSize: '0.9rem', color: '#52525b' }}>
+                      {resource.type} • {resource.location}
+                    </p>
 
-                  {/* NEW: AI Predictive Health Bar */}
-                  <div style={{ marginTop: '1rem', background: '#f4f4f5', padding: '0.75rem', borderRadius: '8px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.25rem', fontWeight: 'bold', color: '#3f3f46' }}>
-                      <span>AI Health Forecast</span>
-                      <span style={{ color: healthColor }}>{health}%</span>
-                    </div>
-                    {/* The Progress Bar */}
-                    <div style={{ width: '100%', height: '8px', background: '#e4e4e7', borderRadius: '4px', overflow: 'hidden' }}>
-                      <div style={{ width: `${health}%`, height: '100%', background: healthColor, transition: 'width 0.5s ease-in-out' }}></div>
-                    </div>
-                    {resource.maintenanceAlert && (
-                      <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: '#ef4444', fontWeight: 'bold' }}>
-                        Predictive Failure Imminent. Service required.
+                    {/* AI Predictive Health Bar */}
+                    <div style={{ marginTop: '1rem', background: '#f4f4f5', padding: '0.75rem', borderRadius: '8px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.25rem', fontWeight: 'bold', color: '#3f3f46' }}>
+                        <span>AI Health Forecast</span>
+                        <span style={{ color: healthColor }}>{health}%</span>
                       </div>
-                    )}
-                  </div>
+                      <div style={{ width: '100%', height: '8px', background: '#e4e4e7', borderRadius: '4px', overflow: 'hidden' }}>
+                        <div style={{ width: `${health}%`, height: '100%', background: healthColor, transition: 'width 0.5s ease-in-out' }}></div>
+                      </div>
+                      {resource.maintenanceAlert && (
+                        <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: '#ef4444', fontWeight: 'bold' }}>
+                          Predictive Failure Imminent. Service required.
+                        </div>
+                      )}
+                    </div>
 
-                  <div className="admin-actions" style={{ marginTop: '1rem' }}>
-                    <button onClick={() => handleEditResource(resource)} className="btn btn-edit">Edit</button>
-                    <button onClick={() => handleDeleteResource(resource.id)} className="btn btn-danger">Delete</button>
+                    <div className="admin-actions" style={{ marginTop: '1rem' }}>
+                      <button onClick={() => handleEditResource(resource)} className="btn btn-edit">Edit</button>
+                      <button onClick={() => handleDeleteResource(resource.id)} className="btn btn-danger">Delete</button>
+                    </div>
                   </div>
                 </div>
               );
@@ -234,7 +263,7 @@ export default function AdminDashboard() {
             <ShieldAlert size={24} />
             <h2 style={{ margin: 0 }}>Access Control Management</h2>
           </div>
-          
+
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid #e4e4e7' }}>
@@ -257,11 +286,11 @@ export default function AdminDashboard() {
                   </td>
                   <td style={{ padding: '1rem 0.5rem', color: '#52525b' }}>{user.email}</td>
                   <td style={{ padding: '1rem 0.5rem' }}>
-                    <select 
-                      value={user.role} 
+                    <select
+                      value={user.role}
                       onChange={(e) => handleRoleChange(user.id, e.target.value)}
                       style={{ padding: '0.4rem', borderRadius: '6px', border: '1px solid #d4d4d8' }}
-                      disabled={user.email === 'ihthishamirshad781@gmail.com' || user.accountStatus === 'DELETED'} 
+                      disabled={user.email === 'ihthishamirshad781@gmail.com' || user.accountStatus === 'DELETED'}
                     >
                       <option value="USER">User (Student/Staff)</option>
                       <option value="TECHNICIAN">Technician</option>
@@ -269,18 +298,18 @@ export default function AdminDashboard() {
                     </select>
                   </td>
                   <td style={{ padding: '1rem 0.5rem' }}>
-                    <select 
-                      value={user.accountStatus || 'ACTIVE'} 
+                    <select
+                      value={user.accountStatus || 'ACTIVE'}
                       onChange={(e) => handleStatusChange(user.id, e.target.value)}
-                      style={{ 
-                        padding: '0.4rem', 
-                        borderRadius: '6px', 
+                      style={{
+                        padding: '0.4rem',
+                        borderRadius: '6px',
                         border: `1px solid ${user.accountStatus === 'SUSPENDED' ? '#ef4444' : '#d4d4d8'}`,
                         backgroundColor: user.accountStatus === 'SUSPENDED' ? '#fef2f2' : 'white',
                         color: user.accountStatus === 'SUSPENDED' ? '#991b1b' : 'inherit',
                         fontWeight: user.accountStatus === 'SUSPENDED' ? 'bold' : 'normal'
                       }}
-                      disabled={user.email === 'ihthishamirshad781@gmail.com'} 
+                      disabled={user.email === 'ihthishamirshad781@gmail.com'}
                     >
                       <option value="ACTIVE">Active</option>
                       <option value="SUSPENDED">Suspended</option>
@@ -293,7 +322,7 @@ export default function AdminDashboard() {
           </table>
         </div>
       )}
-      
+
       {/* --- AUDIT LOGS TAB --- */}
       {activeTab === 'logs' && (
         <div className="form-container" style={{ background: '#09090b', color: '#a1a1aa', fontFamily: 'monospace' }}>
@@ -301,17 +330,17 @@ export default function AdminDashboard() {
             <Activity size={24} />
             <h2 style={{ margin: 0, color: 'white', fontFamily: 'sans-serif' }}>Active Audit Trail</h2>
           </div>
-          
+
           <div style={{ maxHeight: '500px', overflowY: 'auto', padding: '1rem', background: 'black', borderRadius: '8px', border: '1px solid #27272a' }}>
             {logs.length === 0 ? (
               <p>No system activity recorded yet...</p>
             ) : (
               logs.map((log) => {
                 const date = new Date(log.timestamp).toLocaleString()
-                
+
                 const isSuspicious = log.action === 'SUSPICIOUS_LOGIN' || log.action === 'FAILED_LOGIN';
                 const actionColor = isSuspicious ? '#ef4444' : '#f59e0b';
-                
+
                 return (
                   <div key={log.id} style={{ marginBottom: '1rem', borderBottom: '1px dashed #27272a', paddingBottom: '0.5rem', background: isSuspicious ? 'rgba(239, 68, 68, 0.1)' : 'transparent' }}>
                     <span style={{ color: '#3b82f6' }}>[{date}]</span>{' '}
@@ -328,7 +357,7 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
-      
+
       {/* --- BOOKING REQUESTS TAB --- */}
       {activeTab === 'bookings' && (
         <div className="form-container">
@@ -336,7 +365,7 @@ export default function AdminDashboard() {
             <CalendarCheck size={24} />
             <h2 style={{ margin: 0 }}>Reservation Approval Inbox</h2>
           </div>
-          
+
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid #e4e4e7' }}>
@@ -354,7 +383,7 @@ export default function AdminDashboard() {
                   <td style={{ padding: '1rem 0.5rem' }}><strong>{booking.userEmail}</strong></td>
                   <td style={{ padding: '1rem 0.5rem', fontSize: '0.85rem', color: '#71717a' }}>{booking.resourceId.slice(-6)}</td>
                   <td style={{ padding: '1rem 0.5rem', fontSize: '0.85rem' }}>
-                    {new Date(booking.startTime).toLocaleDateString()} <br/>
+                    {new Date(booking.startTime).toLocaleDateString()} <br />
                     {new Date(booking.startTime).toLocaleTimeString()} - {new Date(booking.endTime).toLocaleTimeString()}
                   </td>
                   <td style={{ padding: '1rem 0.5rem' }}>

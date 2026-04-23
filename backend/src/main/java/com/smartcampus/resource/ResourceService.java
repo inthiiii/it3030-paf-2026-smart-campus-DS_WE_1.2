@@ -152,6 +152,7 @@ public class ResourceService {
             existing.setLocation(updatedResource.getLocation());
             existing.setStatus(updatedResource.getStatus());
             existing.setFeatures(updatedResource.getFeatures());
+            existing.setImageUrl(updatedResource.getImageUrl());
             return repository.save(existing);
         }).orElseThrow(() -> new RuntimeException("Resource not found with id: " + id));
     }

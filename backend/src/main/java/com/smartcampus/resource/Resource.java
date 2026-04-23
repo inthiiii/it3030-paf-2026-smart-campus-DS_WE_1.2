@@ -17,7 +17,8 @@ public class Resource {
     private int capacity;
     private String location;
     private ResourceStatus status;
-    private List<String> features; 
+    private List<String> features;
+    private String imageUrl; 
 
     // PREDICTIVE MAINTENANCE
     private java.time.LocalDateTime createdAt = java.time.LocalDateTime.now();

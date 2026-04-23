@@ -169,14 +169,30 @@ export default function UserDashboard() {
           {viewMode === 'grid' && (
             <div className="grid">
               {filteredResources.map((resource) => (
-                <div key={resource.id} className="card" onClick={() => handleNodeClick(resource)} style={{ cursor: 'pointer' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <h2 style={{ margin: '0 0 0.5rem 0' }}>{resource.name}</h2>
-                    <span className={`status-badge status-${resource.status}`}>{resource.status.replace(/_/g, ' ')}</span>
+                <div key={resource.id} className="card" onClick={() => handleNodeClick(resource)} style={{ cursor: 'pointer', overflow: 'hidden', padding: 0 }}>
+                  
+                  {/* The Image Header with the SINGLE Status Badge */}
+                  <div style={{ height: '160px', width: '100%', background: '#f4f4f5', position: 'relative' }}>
+                    <img 
+                      src={resource.imageUrl || 'https://images.unsplash.com/photo-1598620617377-3bfb505b4384?auto=format&fit=crop&q=80&w=800'} 
+                      alt={resource.name} 
+                      referrerPolicy="no-referrer"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      onError={(e) => { if (!e.target.dataset.fallback) { e.target.dataset.fallback = '1'; e.target.src = 'https://images.unsplash.com/photo-1598620617377-3bfb505b4384?auto=format&fit=crop&q=80&w=800'; } }} 
+                    />
+                    <span className={`status-badge status-${resource.status}`} style={{ position: 'absolute', top: '1rem', right: '1rem', boxShadow: '0 4px 6px rgba(0,0,0,0.3)' }}>
+                      {resource.status.replace(/_/g, ' ')}
+                    </span>
                   </div>
-                  <div className="icon-text"><MonitorPlay size={18} /><span>{resource.type.replace(/_/g, ' ')}</span></div>
-                  <div className="icon-text"><Users size={18} /><span>Capacity: {resource.capacity}</span></div>
-                  <div className="icon-text"><MapPin size={18} /><span>{resource.location}</span></div>
+
+                  {/* The Text Details (Redundant badge removed, padding added) */}
+                  <div style={{ padding: '1.5rem' }}>
+                    <h2 style={{ margin: '0 0 0.5rem 0' }}>{resource.name}</h2>
+                    <div className="icon-text"><MonitorPlay size={18} /><span>{resource.type.replace(/_/g, ' ')}</span></div>
+                    <div className="icon-text"><Users size={18} /><span>Capacity: {resource.capacity}</span></div>
+                    <div className="icon-text"><MapPin size={18} /><span>{resource.location}</span></div>
+                  </div>
+                  
                 </div>
               ))}
             </div>
@@ -204,45 +220,60 @@ export default function UserDashboard() {
         </>
       )}
 
-      {/* NEW MAP ENHANCEMENT: QUICK VIEW MODAL */}
+      {/* MAP ENHANCEMENT: QUICK VIEW MODAL */}
       {selectedResource && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
-          <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', width: '90%', maxWidth: '500px', position: 'relative' }}>
-            <button onClick={() => setSelectedResource(null)} style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', cursor: 'pointer' }}><X /></button>
+          <div style={{ background: 'white', borderRadius: '12px', width: '90%', maxWidth: '500px', position: 'relative', overflow: 'hidden' }}>
+            <button onClick={() => setSelectedResource(null)} style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'rgba(255,255,255,0.8)', border: 'none', cursor: 'pointer', borderRadius: '50%', padding: '0.3rem', zIndex: 10 }}><X /></button>
             
-            <h2 style={{ marginTop: 0 }}>{selectedResource.name}</h2>
-            <span className={`status-badge status-${selectedResource.status}`}>{selectedResource.status.replace(/_/g, ' ')}</span>
-            
-            <div style={{ marginTop: '1.5rem' }}>
-              <p><strong>Type:</strong> {selectedResource.type}</p>
-              <p><strong>Location:</strong> {selectedResource.location}</p>
-              <p><strong>Capacity:</strong> {selectedResource.capacity} seats</p>
-              <p><strong>Features:</strong> {selectedResource.features.join(', ')}</p>
+            {/* NEW: Modal Header Image */}
+            <div style={{ height: '200px', width: '100%' }}>
+              <img 
+                 src={selectedResource.imageUrl || 'https://images.unsplash.com/photo-1598620617377-3bfb505b4384?auto=format&fit=crop&q=80&w=800'} 
+                 alt={selectedResource.name} 
+                 referrerPolicy="no-referrer"
+                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                 onError={(e) => { if (!e.target.dataset.fallback) { e.target.dataset.fallback = '1'; e.target.src = 'https://images.unsplash.com/photo-1598620617377-3bfb505b4384?auto=format&fit=crop&q=80&w=800'; } }}
+              />
             </div>
 
-            {/* AI SMART ALTERNATIVES MODULE */}
-            {selectedResource.status !== 'ACTIVE' && (
-              <div style={{ marginTop: '2rem', padding: '1rem', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px' }}>
-                <h4 style={{ margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#166534' }}>
-                  <Zap size={18} fill="#22c55e" /> AI Suggested Alternatives
-                </h4>
-                
-                {findingAlternatives ? (
-                  <p style={{ color: '#166534', margin: 0 }}>AI is calculating best matches...</p>
-                ) : aiAlternatives.length > 0 ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    {aiAlternatives.map(alt => (
-                      <div key={alt.id} style={{ background: 'white', padding: '0.75rem', borderRadius: '6px', border: '1px solid #dcfce7', cursor: 'pointer' }} onClick={() => handleNodeClick(alt)}>
-                        <strong>{alt.name}</strong> ({alt.location})
-                        <div style={{ fontSize: '0.8rem', color: '#52525b', marginTop: '0.25rem' }}>Match found based on: {alt.features.slice(0,2).join(', ')}</div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p style={{ color: '#991b1b', margin: 0 }}>No active alternatives found right now.</p>
-                )}
+            <div style={{ padding: '2rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '-0.5rem' }}>
+                <h2 style={{ margin: 0 }}>{selectedResource.name}</h2>
+                <span className={`status-badge status-${selectedResource.status}`}>{selectedResource.status.replace(/_/g, ' ')}</span>
               </div>
-            )}
+              
+              <div style={{ marginTop: '1.5rem' }}>
+                <p><strong>Type:</strong> {selectedResource.type}</p>
+                <p><strong>Location:</strong> {selectedResource.location}</p>
+                <p><strong>Capacity:</strong> {selectedResource.capacity} seats</p>
+                <p><strong>Features:</strong> {selectedResource.features.join(', ')}</p>
+              </div>
+
+              {/* AI SMART ALTERNATIVES MODULE */}
+              {selectedResource.status !== 'ACTIVE' && (
+                <div style={{ marginTop: '2rem', padding: '1rem', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px' }}>
+                  <h4 style={{ margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#166534' }}>
+                    <Zap size={18} fill="#22c55e" /> AI Suggested Alternatives
+                  </h4>
+                  
+                  {findingAlternatives ? (
+                    <p style={{ color: '#166534', margin: 0 }}>AI is calculating best matches...</p>
+                  ) : aiAlternatives.length > 0 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      {aiAlternatives.map(alt => (
+                        <div key={alt.id} style={{ background: 'white', padding: '0.75rem', borderRadius: '6px', border: '1px solid #dcfce7', cursor: 'pointer' }} onClick={() => handleNodeClick(alt)}>
+                          <strong>{alt.name}</strong> ({alt.location})
+                          <div style={{ fontSize: '0.8rem', color: '#52525b', marginTop: '0.25rem' }}>Match found based on: {alt.features.slice(0,2).join(', ')}</div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p style={{ color: '#991b1b', margin: 0 }}>No active alternatives found right now.</p>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
