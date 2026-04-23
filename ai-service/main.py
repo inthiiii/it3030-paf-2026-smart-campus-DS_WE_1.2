@@ -150,3 +150,35 @@ def predict_no_show(request: PredictionRequest):
     
 # --- END MODULE B ---
     
+# --- MODULE 4: Smart Notification Delivery AI ---
+
+class NotificationRequest(BaseModel):
+    user_email: str
+    hour_of_day: float
+    is_urgent: bool
+
+@app.post("/api/notifications/smart-delivery")
+def evaluate_delivery_time(request: NotificationRequest):
+    # 1. Urgent alerts (like "Booking Cancelled 10 mins before start") ALWAYS bypass the AI
+    if request.is_urgent:
+        return {"action": "SEND_NOW", "confidence": 1.0}
+
+    # 2. Simple Heuristic AI (In a real system, this would be a trained Logistic Regression model 
+    # based on the exact times this specific user usually clicks 'read' on their notifications)
+    
+    # Let's assume standard "Low Attention" hours are between 10:00 PM (22.0) and 7:00 AM (7.0)
+    if request.hour_of_day >= 22.0 or request.hour_of_day <= 7.0:
+        return {
+            "action": "HOLD_FOR_DIGEST", 
+            "confidence": 0.85,
+            "reason": "Predicted user sleep/away cycle. Queuing for 8:00 AM digest."
+        }
+    
+    # Otherwise, it's daytime, blast it through!
+    return {
+        "action": "SEND_NOW", 
+        "confidence": 0.92,
+        "reason": "Active user hours detected."
+    }
+
+# --- END MODULE 4 ---
