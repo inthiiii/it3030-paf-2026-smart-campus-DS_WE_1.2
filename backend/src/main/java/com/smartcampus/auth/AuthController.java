@@ -16,8 +16,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Map;
 
@@ -28,6 +26,9 @@ public class AuthController {
 
     @Value("${google.client.id}")
     private String googleClientId;
+
+    @Value("${admin.email:ihthishamirshad781@gmail.com}")
+    private String adminEmail;
 
     @Autowired
     private UserRepository userRepository;
@@ -69,7 +70,7 @@ public class AuthController {
                     newUser.setPictureUrl(pictureUrl);
                     
                     // Master Admin Check
-                    if ("ihthishamirshad781@gmail.com".equals(email)) {
+                    if (adminEmail.equals(email)) {
                         newUser.setRole(User.Role.ADMIN);
                     } else {
                         newUser.setRole(User.Role.USER); 
@@ -82,7 +83,8 @@ public class AuthController {
                         savedUser.getEmail(), 
                         "Welcome to Smart Campus! 🎉", 
                         "Your account has been created successfully. You can now book facilities.", 
-                        Notification.NotificationType.SUCCESS
+                        Notification.NotificationType.SUCCESS,
+                        false // Welcome notifications are not urgent
                     );
                     
                     return savedUser;
@@ -97,7 +99,7 @@ public class AuthController {
                 try {
                     Map<String, String> aiPayload = Map.of(
                         "email", user.getEmail(),
-                        "timestamp", java.time.LocalDateTime.now().toString()
+                        "timestamp", java.time.Instant.now().toString()
                     );
                     
                     // Ping the Python AI Server

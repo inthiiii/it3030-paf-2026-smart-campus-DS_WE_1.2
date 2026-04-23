@@ -8,7 +8,6 @@ import MyTicketsPage from './pages/tickets/MyTicketsPage'
 import AdminTicketsPage from './pages/tickets/AdminTicketsPage'
 import { LogOut, AlertTriangle, ClipboardList, Settings } from 'lucide-react'
 import NotificationBell from './components/NotificationBell'
-import { LogOut } from 'lucide-react'
 import './index.css'
 
 // Protects routes that require login
