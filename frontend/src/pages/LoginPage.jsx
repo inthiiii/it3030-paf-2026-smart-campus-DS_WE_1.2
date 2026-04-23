@@ -14,13 +14,14 @@ export default function LoginPage() {
       });
 
       // 2. Extract the data Spring Boot sends back
-      const { token, role, name, picture } = res.data;
+      const { token, role, name, picture, email } = res.data;
 
       // 3. Save to localStorage so the user stays logged in
       localStorage.setItem('jwt_token', token);
       localStorage.setItem('user_role', role);
       localStorage.setItem('user_name', name);
       localStorage.setItem('user_picture', picture);
+      localStorage.setItem('user_email', email);
 
       // 4. Route them based on their role
       if (role === 'ADMIN') {
