@@ -17,7 +17,12 @@ public class Resource {
     private int capacity;
     private String location;
     private ResourceStatus status;
-    private List<String> features; // e.g., ["Projector", "Whiteboard"]
+    private List<String> features; 
+
+    // PREDICTIVE MAINTENANCE
+    private java.time.LocalDateTime createdAt = java.time.LocalDateTime.now();
+    private Double currentHealthScore = 100.0; // Defaults to perfect health
+    private boolean maintenanceAlert = false;
     
     // Enums to keep your data strict and avoid typos
     public enum ResourceType {

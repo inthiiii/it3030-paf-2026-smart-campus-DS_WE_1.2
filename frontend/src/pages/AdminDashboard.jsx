@@ -179,21 +179,55 @@ export default function AdminDashboard() {
           </div>
 
           <div className="grid">
-            {resources.map((resource) => (
-              <div key={resource.id} className="card">
-                <h3 style={{ margin: '0 0 0.5rem 0' }}>{resource.name}</h3>
-                <p style={{ margin: 0, fontSize: '0.9rem', color: '#52525b' }}>{resource.type} • {resource.location}</p>
-                <div className="admin-actions">
-                  <button onClick={() => handleEditResource(resource)} className="btn btn-edit">Edit</button>
-                  <button onClick={() => handleDeleteResource(resource.id)} className="btn btn-danger">Delete</button>
+            {resources.map((resource) => {
+              // Health Bar Color Logic
+              const health = resource.currentHealthScore || 100;
+              const healthColor = health > 70 ? '#22c55e' : health > 25 ? '#eab308' : '#ef4444';
+
+              return (
+                <div key={resource.id} className="card" style={{ border: resource.maintenanceAlert ? '2px solid #ef4444' : '1px solid #e4e4e7' }}>
+                  
+                  {/* Card Header */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <h3 style={{ margin: '0 0 0.5rem 0' }}>{resource.name}</h3>
+                    {resource.maintenanceAlert && (
+                      <span title="AI Maintenance Alert" style={{ animation: 'pulse-red 2s infinite' }}>⚠️</span>
+                    )}
+                  </div>
+                  
+                  <p style={{ margin: 0, fontSize: '0.9rem', color: '#52525b' }}>
+                    {resource.type} • {resource.location}
+                  </p>
+
+                  {/* NEW: AI Predictive Health Bar */}
+                  <div style={{ marginTop: '1rem', background: '#f4f4f5', padding: '0.75rem', borderRadius: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.25rem', fontWeight: 'bold', color: '#3f3f46' }}>
+                      <span>AI Health Forecast</span>
+                      <span style={{ color: healthColor }}>{health}%</span>
+                    </div>
+                    {/* The Progress Bar */}
+                    <div style={{ width: '100%', height: '8px', background: '#e4e4e7', borderRadius: '4px', overflow: 'hidden' }}>
+                      <div style={{ width: `${health}%`, height: '100%', background: healthColor, transition: 'width 0.5s ease-in-out' }}></div>
+                    </div>
+                    {resource.maintenanceAlert && (
+                      <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: '#ef4444', fontWeight: 'bold' }}>
+                        Predictive Failure Imminent. Service required.
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="admin-actions" style={{ marginTop: '1rem' }}>
+                    <button onClick={() => handleEditResource(resource)} className="btn btn-edit">Edit</button>
+                    <button onClick={() => handleDeleteResource(resource.id)} className="btn btn-danger">Delete</button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </>
       )}
 
-      {/* --- USERS TAB (UPGRADED) --- */}
+      {/* --- USERS TAB  --- */}
       {activeTab === 'users' && (
         <div className="form-container">
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', color: '#ef4444' }}>

@@ -182,3 +182,43 @@ def evaluate_delivery_time(request: NotificationRequest):
     }
 
 # --- END MODULE 4 ---
+
+# --- MODULE A: Predictive Maintenance AI ---
+
+class AssetHealthRequest(BaseModel):
+    asset_type: str
+    total_booked_hours: float
+    age_in_days: int
+
+@app.post("/api/assets/predict-health")
+def predict_asset_health(request: AssetHealthRequest):
+    # In a real enterprise system, this would use a Survival Analysis Model (like Kaplan-Meier).
+    # Here we use a weighted degradation algorithm based on asset vulnerability.
+    
+    # 1. Define base lifespan and vulnerability multipliers
+    vulnerability = {
+        "EQUIPMENT": 1.5,     # Projectors break fast
+        "LAB": 1.2,           # Heavy computer usage
+        "MEETING_ROOM": 0.8,  # Just chairs and tables
+        "LECTURE_HALL": 0.5   # Very durable
+    }
+    
+    multiplier = vulnerability.get(request.asset_type, 1.0)
+    
+    # 2. Calculate degradation (Simulated ML Curve)
+    # The more hours used, the faster health drops.
+    wear_from_usage = (request.total_booked_hours * multiplier) / 10.0
+    wear_from_age = request.age_in_days / 30.0
+    
+    total_degradation = wear_from_usage + wear_from_age
+    
+    # 3. Final Health Score (Starts at 100%, cannot go below 0%)
+    health_score = max(0.0, 100.0 - total_degradation)
+    
+    return {
+        "health_score": round(health_score, 1),
+        "needs_maintenance": bool(health_score < 25.0), # Flag for Admin if under 25%
+        "estimated_days_remaining": int((health_score / max(0.1, total_degradation)) * 30) if total_degradation > 0 else 999
+    }
+    
+# --- END MODULE A ---
