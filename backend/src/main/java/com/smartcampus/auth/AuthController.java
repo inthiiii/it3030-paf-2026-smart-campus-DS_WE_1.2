@@ -11,9 +11,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Map;
+
+import com.smartcampus.audit.AuditService;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -28,6 +33,12 @@ public class AuthController {
 
     @Autowired
     private JwtUtil jwtUtil;
+
+    @Autowired
+    private AuditService auditService;
+
+    @Autowired
+    private RestTemplate restTemplate;
 
     @PostMapping("/google")
     public ResponseEntity<?> authenticateWithGoogle(@RequestBody Map<String, String> payload) {
@@ -52,7 +63,7 @@ public class AuthController {
                     newUser.setEmail(email);
                     newUser.setName(name);
                     newUser.setPictureUrl(pictureUrl);
-                    // First person to log in gets to be an ADMIN, everyone else is a USER
+                    // Master Admin Check
                     if ("ihthishamirshad781@gmail.com".equals(email)) {
                         newUser.setRole(User.Role.ADMIN);
                     } else {
@@ -64,7 +75,33 @@ public class AuthController {
                 // 3. Generate our secure JWT
                 String jwt = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
 
-                // 4. Send the user data and token back to React
+                // --------------------------------------------------------
+                // 4. THE ML FEATURE: Suspicious Login Detection
+                // --------------------------------------------------------
+                try {
+                    Map<String, String> aiPayload = Map.of(
+                        "email", user.getEmail(),
+                        "timestamp", java.time.LocalDateTime.now().toString()
+                    );
+                    
+                    // Ping the Python AI Server
+                    Map aiResponse = restTemplate.postForObject("http://localhost:8000/api/anomaly/login", aiPayload, Map.class);
+                    
+                    boolean isSuspicious = (Boolean) aiResponse.get("is_suspicious");
+
+                    // Log the result into the Audit Trail
+                    if (isSuspicious) {
+                        auditService.logAction(user.getEmail(), "SUSPICIOUS_LOGIN", "🚨 AI DETECTED ANOMALOUS LOGIN TIME!");
+                    } else {
+                        auditService.logAction(user.getEmail(), "LOGIN", "Standard user authentication.");
+                    }
+                } catch (Exception e) {
+                    // Fallback just in case you forgot to turn the Python server on!
+                    auditService.logAction(user.getEmail(), "LOGIN", "User authenticated (AI Check Offline).");
+                }
+                // --------------------------------------------------------
+
+                // 5. Send the user data and token back to React
                 return ResponseEntity.ok(Map.of(
                         "token", jwt,
                         "role", user.getRole(),

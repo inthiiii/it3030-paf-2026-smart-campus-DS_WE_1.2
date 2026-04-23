@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom'
 import UserDashboard from './pages/UserDashboard'
 import AdminDashboard from './pages/AdminDashboard'
+import BookingDashboard from './pages/BookingDashboard'
 import LoginPage from './pages/LoginPage'
 import ReportTicketPage from './pages/tickets/ReportTicketPage'
 import MyTicketsPage from './pages/tickets/MyTicketsPage'
@@ -48,9 +49,10 @@ const NavBar = () => {
         {token && <Link to="/report-issue" style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}><AlertTriangle size={16} />Report Issue</Link>}
         {token && <Link to="/my-tickets" style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}><ClipboardList size={16} />My Tickets</Link>}
         {(role === 'ADMIN' || role === 'TECHNICIAN') && <Link to="/all-tickets" style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}><Settings size={16} />All Tickets</Link>}
+        {token && <Link to="/bookings">My Bookings</Link>}
         {role === 'ADMIN' && <Link to="/admin">Admin Panel</Link>}
       </div>
-      
+
       {token ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           {picture && <img src={picture} alt="Profile" style={{ width: '32px', height: '32px', borderRadius: '50%' }} />}
@@ -66,6 +68,9 @@ const NavBar = () => {
 };
 
 function App() {
+  // NEW: Grab the token so the Router knows if the user is logged in
+  const token = localStorage.getItem('jwt_token');
+
   return (
     <Router>
       <NavBar />
@@ -80,6 +85,16 @@ function App() {
 
         {/* Admin Panel */}
         <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+
+        {/* Now this line will work perfectly! */}
+        <Route path="/bookings" element={token ? <BookingDashboard /> : <Navigate to="/login" />} />
+
+        {/* The Admin Dashboard is wrapped in our protection logic */}
+        <Route path="/admin" element={
+          <AdminRoute>
+            <AdminDashboard />
+          </AdminRoute>
+        } />
       </Routes>
     </Router>
   )

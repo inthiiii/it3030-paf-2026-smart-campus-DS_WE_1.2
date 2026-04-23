@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
-import { Users, Server, ShieldAlert } from 'lucide-react'
+import { Users, Server, ShieldAlert, Activity, CalendarCheck } from 'lucide-react'
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('resources') // 'resources' or 'users'
@@ -15,9 +15,16 @@ export default function AdminDashboard() {
   // User State
   const [users, setUsers] = useState([])
 
+  // Audit Log State
+  const [logs, setLogs] = useState([])
+
+  const [allBookings, setAllBookings] = useState([])
+
   useEffect(() => {
     fetchResources()
     fetchUsers()
+    fetchLogs()
+    fetchAllBookings()
   }, [])
 
   const fetchResources = async () => {
@@ -28,6 +35,24 @@ export default function AdminDashboard() {
   const fetchUsers = async () => {
     const response = await axios.get('http://localhost:8080/api/users')
     setUsers(response.data)
+  }
+
+  const fetchLogs = async () => {
+    try {
+      const response = await axios.get('http://localhost:8080/api/audit')
+      setLogs(response.data)
+    } catch (error) {
+      console.error("Error fetching logs:", error)
+    }
+  }
+
+  const fetchAllBookings = async () => {
+    try {
+      const response = await axios.get('http://localhost:8080/api/bookings/all')
+      setAllBookings(response.data)
+    } catch (error) {
+      console.error("Error fetching bookings:", error)
+    }
   }
 
   // --- Resource Handlers ---
@@ -74,6 +99,15 @@ export default function AdminDashboard() {
     }
   }
 
+  const handleBookingAction = async (id, newStatus) => {
+    try {
+      await axios.put(`http://localhost:8080/api/bookings/${id}/status`, { status: newStatus })
+      fetchAllBookings() // Refresh the list
+    } catch (error) {
+      console.error("Failed to update booking:", error)
+    }
+  }
+
   return (
     <div className="dashboard">
       <div className="header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
@@ -92,11 +126,25 @@ export default function AdminDashboard() {
             <Server size={18} /> Resources
           </button>
           <button 
+            className={`btn ${activeTab === 'logs' ? 'btn-primary' : ''}`}
+            onClick={() => setActiveTab('logs')}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0, background: activeTab !== 'logs' ? '#e4e4e7' : '', color: activeTab !== 'logs' ? '#3f3f46' : '' }}
+          >
+            <Activity size={18} /> System Logs
+          </button>
+          <button 
             className={`btn ${activeTab === 'users' ? 'btn-primary' : ''}`}
             onClick={() => setActiveTab('users')}
             style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0, background: activeTab !== 'users' ? '#e4e4e7' : '', color: activeTab !== 'users' ? '#3f3f46' : '' }}
           >
             <Users size={18} /> User Access
+          </button>
+          <button 
+            className={`btn ${activeTab === 'bookings' ? 'btn-primary' : ''}`}
+            onClick={() => setActiveTab('bookings')}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0, background: activeTab !== 'bookings' ? '#e4e4e7' : '', color: activeTab !== 'bookings' ? '#3f3f46' : '' }}
+          >
+            <CalendarCheck size={18} /> Booking Requests
           </button>
         </div>
       </div>
@@ -175,6 +223,97 @@ export default function AdminDashboard() {
                       <option value="TECHNICIAN">Technician</option>
                       <option value="ADMIN">Administrator</option>
                     </select>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    {/* --- AUDIT LOGS TAB --- */}
+      {activeTab === 'logs' && (
+        <div className="form-container" style={{ background: '#09090b', color: '#a1a1aa', fontFamily: 'monospace' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', color: '#10b981' }}>
+            <Activity size={24} />
+            <h2 style={{ margin: 0, color: 'white', fontFamily: 'sans-serif' }}>Active Audit Trail</h2>
+          </div>
+          
+          <div style={{ maxHeight: '500px', overflowY: 'auto', padding: '1rem', background: 'black', borderRadius: '8px', border: '1px solid #27272a' }}>
+            {logs.length === 0 ? (
+              <p>No system activity recorded yet...</p>
+            ) : (
+              logs.map((log) => {
+                const date = new Date(log.timestamp).toLocaleString()
+                
+                // NEW: Make the text red and bold if it's suspicious
+                const isSuspicious = log.action === 'SUSPICIOUS_LOGIN';
+                const actionColor = isSuspicious ? '#ef4444' : '#f59e0b';
+                
+                return (
+                  <div key={log.id} style={{ marginBottom: '1rem', borderBottom: '1px dashed #27272a', paddingBottom: '0.5rem', background: isSuspicious ? 'rgba(239, 68, 68, 0.1)' : 'transparent' }}>
+                    <span style={{ color: '#3b82f6' }}>[{date}]</span>{' '}
+                    <span style={{ color: actionColor, fontWeight: 'bold' }}>{log.action}</span>{' '}
+                    <span style={{ color: 'white' }}>| User: {log.userEmail}</span>
+                    <br />
+                    <span style={{ color: isSuspicious ? '#ef4444' : '#10b981', marginLeft: '1rem', fontWeight: isSuspicious ? 'bold' : 'normal' }}>
+                      ► {log.details}
+                    </span>
+                  </div>
+                )
+              })
+            )}
+          </div>
+        </div>
+      )}
+      {/* --- BOOKING REQUESTS TAB --- */}
+      {activeTab === 'bookings' && (
+        <div className="form-container">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', color: '#2563eb' }}>
+            <CalendarCheck size={24} />
+            <h2 style={{ margin: 0 }}>Reservation Approval Inbox</h2>
+          </div>
+          
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid #e4e4e7' }}>
+                <th style={{ padding: '1rem 0.5rem' }}>User</th>
+                <th style={{ padding: '1rem 0.5rem' }}>Resource ID</th>
+                <th style={{ padding: '1rem 0.5rem' }}>Date & Time</th>
+                <th style={{ padding: '1rem 0.5rem' }}>Purpose</th>
+                <th style={{ padding: '1rem 0.5rem' }}>Status</th>
+                <th style={{ padding: '1rem 0.5rem' }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {allBookings.map(booking => (
+                <tr key={booking.id} style={{ borderBottom: '1px solid #f4f4f5', background: booking.aiRiskScore >= 50 ? '#fef2f2' : 'transparent' }}>
+                  <td style={{ padding: '1rem 0.5rem' }}><strong>{booking.userEmail}</strong></td>
+                  <td style={{ padding: '1rem 0.5rem', fontSize: '0.85rem', color: '#71717a' }}>{booking.resourceId.slice(-6)}</td>
+                  <td style={{ padding: '1rem 0.5rem', fontSize: '0.85rem' }}>
+                    {new Date(booking.startTime).toLocaleDateString()} <br/>
+                    {new Date(booking.startTime).toLocaleTimeString()} - {new Date(booking.endTime).toLocaleTimeString()}
+                  </td>
+                  <td style={{ padding: '1rem 0.5rem' }}>
+                    {booking.purpose}
+                    {/* Display the AI Risk Badge */}
+                    {booking.aiRiskScore !== null && (
+                      <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', fontWeight: 'bold', color: booking.aiRiskScore > 40 ? '#ef4444' : '#22c55e' }}>
+                        🤖 AI Risk: {booking.aiRiskScore}%
+                      </div>
+                    )}
+                  </td>
+                  <td style={{ padding: '1rem 0.5rem' }}>
+                    <span className={`status-badge status-${booking.status === 'PENDING' ? 'MAINTENANCE' : booking.status === 'CONFIRMED' ? 'ACTIVE' : 'OUT_OF_SERVICE'}`}>
+                      {booking.status}
+                    </span>
+                  </td>
+                  <td style={{ padding: '1rem 0.5rem', display: 'flex', gap: '0.5rem' }}>
+                    {booking.status === 'PENDING' && (
+                      <>
+                        <button onClick={() => handleBookingAction(booking.id, 'CONFIRMED')} className="btn btn-primary" style={{ padding: '0.4rem 0.8rem', margin: 0, fontSize: '0.8rem' }}>Approve</button>
+                        <button onClick={() => handleBookingAction(booking.id, 'REJECTED')} className="btn btn-danger" style={{ padding: '0.4rem 0.8rem', margin: 0, fontSize: '0.8rem' }}>Reject</button>
+                      </>
+                    )}
                   </td>
                 </tr>
               ))}
