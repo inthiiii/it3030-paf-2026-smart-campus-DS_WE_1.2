@@ -7,10 +7,19 @@ import NotificationBell from './components/NotificationBell'
 import { LogOut } from 'lucide-react'
 import './index.css'
 
-// A wrapper component to protect the Admin route
+// A wrapper to protect the Admin route
 const AdminRoute = ({ children }) => {
   const role = localStorage.getItem('user_role');
   if (role !== 'ADMIN') {
+    return <Navigate to="/login" />;
+  }
+  return children;
+};
+
+// NEW: A wrapper to protect ANY route that requires a logged-in user
+const ProtectedRoute = ({ children }) => {
+  const token = localStorage.getItem('jwt_token');
+  if (!token) {
     return <Navigate to="/login" />;
   }
   return children;
@@ -39,7 +48,6 @@ const NavBar = () => {
       {token ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
           
-          {/* THE NEW BELL COMPONENT GOES HERE */}
           <NotificationBell />
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', borderLeft: '1px solid #e4e4e7', paddingLeft: '1.5rem' }}>
@@ -57,16 +65,19 @@ const NavBar = () => {
 };
 
 function App() {
-  // Grab the token so the Router knows if the user is logged in
-  const token = localStorage.getItem('jwt_token');
-
   return (
     <Router>
       <NavBar />
       <Routes>
         <Route path="/" element={<UserDashboard />} />
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/bookings" element={token ? <BookingDashboard /> : <Navigate to="/login" />} />
+        
+        {/* UPDATED: Wrapped in our new ProtectedRoute logic */}
+        <Route path="/bookings" element={
+          <ProtectedRoute>
+            <BookingDashboard />
+          </ProtectedRoute>
+        } />
         
         {/* The Admin Dashboard is wrapped in protection logic */}
         <Route path="/admin" element={

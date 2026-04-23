@@ -78,12 +78,21 @@ public class BookingService {
             if (autoApprove) {
                 newBooking.setStatus(Booking.BookingStatus.CONFIRMED);
                 auditService.logAction(userEmail, "AI_AUTO_APPROVE", "AI instantly confirmed booking (Risk: " + riskScore + "%)");
+                
+                // Tell the user the AI approved it instantly!
+                notificationService.sendNotification(
+                    userEmail, 
+                    "Booking Auto-Approved! 🤖✅", 
+                    "The system instantly confirmed your reservation for resource " + newBooking.getResourceId().substring(0, 6) + ".", 
+                    com.smartcampus.notification.Notification.NotificationType.SUCCESS,
+                    true // Urgent so it pops instantly
+                );
             } else {
                 newBooking.setStatus(Booking.BookingStatus.PENDING);
                 auditService.logAction(userEmail, "AI_FLAGGED", "AI routed booking to Admin inbox (Risk: " + riskScore + "%)");
             }
         } catch (Exception e) {
-            // Fallback if AI server is offline
+            // THE MISSING CATCH BLOCK IS BACK!
             newBooking.setStatus(Booking.BookingStatus.PENDING);
             newBooking.setAiRiskScore(null);
             auditService.logAction(userEmail, "REQUEST_BOOKING", "Requested resource (AI Offline)");
@@ -91,13 +100,13 @@ public class BookingService {
 
         Booking savedBooking = bookingRepository.save(newBooking);
 
-        // Alert the Master Admin (Replace with your actual admin email!)
+        // Alert the Master Admin (Using your actual email)
         notificationService.sendNotification(
-            "your.email@gmail.com", 
+            "ihthishamirshad781@gmail.com", 
             "New Booking Request", 
             userEmail + " has requested resource " + newBooking.getResourceId().substring(0, 6) + ".", 
             com.smartcampus.notification.Notification.NotificationType.INFO,
-            false // Not urgent, AI can queue this if it's 2 AM!
+            false // Not urgent, AI can queue this
         );
 
         return savedBooking;
@@ -160,14 +169,14 @@ public class BookingService {
 
         auditService.logAction(userEmail, "CANCEL_BOOKING", "Cancelled booking ID: " + bookingId);
         
-        // Alert the Admin that a user freed up a room
+        // Alert the Admin that a user freed up a room (UPDATED EMAIL HERE)
         notificationService.sendNotification(
-        "your.email@gmail.com", // Master Admin email
-        "Booking Cancelled", 
-        userEmail + " cancelled their booking for resource " + booking.getResourceId().substring(0,6), 
-        com.smartcampus.notification.Notification.NotificationType.WARNING,
-        false
-);
+            "ihthishamirshad781@gmail.com", 
+            "Booking Cancelled", 
+            userEmail + " cancelled their booking for resource " + booking.getResourceId().substring(0,6), 
+            com.smartcampus.notification.Notification.NotificationType.WARNING,
+            false
+        );
 
         return updated;
     }
