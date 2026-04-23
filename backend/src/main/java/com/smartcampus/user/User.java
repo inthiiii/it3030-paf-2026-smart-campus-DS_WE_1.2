@@ -15,6 +15,7 @@ public class User {
     private String name;
     private String pictureUrl;
     private Role role;
+    private boolean notificationsEnabled = true;
 
     public enum Role {
         ADMIN,

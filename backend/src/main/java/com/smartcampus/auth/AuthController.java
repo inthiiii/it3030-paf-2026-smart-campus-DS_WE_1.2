@@ -4,6 +4,9 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
+import com.smartcampus.audit.AuditService;
+import com.smartcampus.notification.Notification;
+import com.smartcampus.notification.NotificationService;
 import com.smartcampus.user.User;
 import com.smartcampus.user.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,8 +20,6 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Map;
-
-import com.smartcampus.audit.AuditService;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -36,6 +37,9 @@ public class AuthController {
 
     @Autowired
     private AuditService auditService;
+
+    @Autowired
+    private NotificationService notificationService;
 
     @Autowired
     private RestTemplate restTemplate;
@@ -63,13 +67,25 @@ public class AuthController {
                     newUser.setEmail(email);
                     newUser.setName(name);
                     newUser.setPictureUrl(pictureUrl);
+                    
                     // Master Admin Check
                     if ("ihthishamirshad781@gmail.com".equals(email)) {
                         newUser.setRole(User.Role.ADMIN);
                     } else {
                         newUser.setRole(User.Role.USER); 
                     }
-                    return userRepository.save(newUser);
+                    
+                    User savedUser = userRepository.save(newUser);
+                    
+                    // Trigger the First-Time Welcome Notification!
+                    notificationService.sendNotification(
+                        savedUser.getEmail(), 
+                        "Welcome to Smart Campus! 🎉", 
+                        "Your account has been created successfully. You can now book facilities.", 
+                        Notification.NotificationType.SUCCESS
+                    );
+                    
+                    return savedUser;
                 });
 
                 // 3. Generate our secure JWT

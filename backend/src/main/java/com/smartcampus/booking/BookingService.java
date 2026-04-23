@@ -11,8 +11,6 @@ import com.smartcampus.audit.AuditService;
 import com.smartcampus.user.User;
 import com.smartcampus.user.UserRepository;
 
-
-
 @Service
 public class BookingService {
 
@@ -27,6 +25,9 @@ public class BookingService {
 
     @Autowired
     private RestTemplate restTemplate;
+
+    @Autowired 
+    private com.smartcampus.notification.NotificationService notificationService;
 
     public Booking createBooking(Booking newBooking, String userEmail) {
         newBooking.setUserEmail(userEmail);
@@ -88,7 +89,18 @@ public class BookingService {
             auditService.logAction(userEmail, "REQUEST_BOOKING", "Requested resource (AI Offline)");
         }
 
-        return bookingRepository.save(newBooking);
+        Booking savedBooking = bookingRepository.save(newBooking);
+
+        // Alert the Master Admin (Replace with your actual admin email!)
+        notificationService.sendNotification(
+            "your.email@gmail.com", 
+            "New Booking Request", 
+            userEmail + " has requested resource " + newBooking.getResourceId().substring(0, 6) + ".", 
+            com.smartcampus.notification.Notification.NotificationType.INFO,
+            false // Not urgent, AI can queue this if it's 2 AM!
+        );
+
+        return savedBooking;
     }
 
     // NEW ADMIN METHOD: Get all bookings
@@ -105,6 +117,21 @@ public class BookingService {
         Booking updated = bookingRepository.save(booking);
         
         auditService.logAction(adminEmail, "REVIEW_BOOKING", "Set booking " + bookingId + " to " + newStatus.name());
+
+        // Alert the User that the Admin made a decision!
+        String title = newStatus == Booking.BookingStatus.CONFIRMED ? "Booking Approved! ✅" : "Booking Rejected ❌";
+        com.smartcampus.notification.Notification.NotificationType type = newStatus == Booking.BookingStatus.CONFIRMED 
+            ? com.smartcampus.notification.Notification.NotificationType.SUCCESS 
+            : com.smartcampus.notification.Notification.NotificationType.ERROR;
+
+        notificationService.sendNotification(
+            booking.getUserEmail(), 
+            title, 
+            "Your reservation for resource " + booking.getResourceId().substring(0, 6) + " has been " + newStatus.name().toLowerCase() + ".", 
+            type,
+            true // Urgent! The user needs to know their status immediately.
+        );
+
         return updated;
     }
 
@@ -133,6 +160,15 @@ public class BookingService {
 
         auditService.logAction(userEmail, "CANCEL_BOOKING", "Cancelled booking ID: " + bookingId);
         
+        // Alert the Admin that a user freed up a room
+        notificationService.sendNotification(
+        "your.email@gmail.com", // Master Admin email
+        "Booking Cancelled", 
+        userEmail + " cancelled their booking for resource " + booking.getResourceId().substring(0,6), 
+        com.smartcampus.notification.Notification.NotificationType.WARNING,
+        false
+);
+
         return updated;
     }
 
