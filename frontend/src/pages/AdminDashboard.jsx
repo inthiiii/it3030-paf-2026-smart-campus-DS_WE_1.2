@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
-import { Users, Server, ShieldAlert, Activity, CalendarCheck, Wrench, ArrowRight, Clock, CheckCircle, AlertTriangle, XCircle } from 'lucide-react'
+import { Users, Server, ShieldAlert, Activity, CalendarCheck, Wrench, ArrowRight, Clock, CheckCircle, AlertTriangle, XCircle, Shield } from 'lucide-react'
 import { getAllTickets } from '../services/ticketService'
+import Toast from '../components/Toast'
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState('resources') // 'resources' or 'users'
+  const [activeTab, setActiveTab] = useState('resources')
+  const [toast, setToast] = useState(null)
+  const [deleteConfirm, setDeleteConfirm] = useState(null)
 
   // Resource State
   const [resources, setResources] = useState([])
@@ -77,20 +80,34 @@ export default function AdminDashboard() {
       if (editingId) {
         await axios.put(`http://localhost:8080/api/resources/${editingId}`, payload)
         setEditingId(null)
+        setToast({ message: 'Resource updated successfully!', type: 'success' })
       } else {
         await axios.post('http://localhost:8080/api/resources', payload)
+        setToast({ message: 'Resource created successfully!', type: 'success' })
       }
       setFormData({ name: '', type: 'LECTURE_HALL', capacity: 0, location: '', status: 'ACTIVE', features: '', imageUrl: '' })
       fetchResources()
     } catch (error) {
       console.error("Error saving resource:", error)
+      setToast({ message: 'Failed to save resource. Please try again.', type: 'error' })
     }
   }
 
-  const handleDeleteResource = async (id) => {
-    if (window.confirm("Delete this resource?")) {
-      await axios.delete(`http://localhost:8080/api/resources/${id}`)
+  const handleDeleteResource = (resource) => {
+    setDeleteConfirm(resource)
+  }
+
+  const confirmDelete = async () => {
+    if (!deleteConfirm) return
+    try {
+      await axios.delete(`http://localhost:8080/api/resources/${deleteConfirm.id}`)
       fetchResources()
+      setToast({ message: 'Resource deleted successfully.', type: 'success' })
+    } catch (error) {
+      console.error('Error deleting resource:', error)
+      setToast({ message: 'Failed to delete resource.', type: 'error' })
+    } finally {
+      setDeleteConfirm(null)
     }
   }
 
@@ -105,20 +122,22 @@ export default function AdminDashboard() {
     try {
       await axios.put(`http://localhost:8080/api/users/${userId}/role`, { role: newRole })
       fetchUsers()
+      setToast({ message: `Role updated to ${newRole}`, type: 'success' })
     } catch (error) {
       console.error("Error updating role:", error)
-      alert("Failed to update role. Check console.")
+      setToast({ message: 'Failed to update role.', type: 'error' })
     }
   }
 
-  // NEW: Handle Account Status Change (Suspend/Activate)
+  // Handle Account Status Change (Suspend/Activate)
   const handleStatusChange = async (userId, newStatus) => {
     try {
       await axios.put(`http://localhost:8080/api/users/${userId}/status`, { status: newStatus })
       fetchUsers()
+      setToast({ message: `Account status changed to ${newStatus}`, type: 'success' })
     } catch (error) {
       console.error("Error updating status:", error)
-      alert("Failed to update account status. Check console.")
+      setToast({ message: 'Failed to update account status.', type: 'error' })
     }
   }
 
@@ -133,139 +152,306 @@ export default function AdminDashboard() {
 
   return (
     <div className="dashboard">
-      <div className="header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-        <div>
-          <h1>Admin Control Panel</h1>
-          <p>Manage Campus Facilities & User Access</p>
-        </div>
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-        {/* Tab Navigation */}
-        <div style={{ display: 'flex', gap: '1rem' }}>
-          <button
-            className={`btn ${activeTab === 'resources' ? 'btn-primary' : ''}`}
-            onClick={() => setActiveTab('resources')}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0, background: activeTab !== 'resources' ? '#e4e4e7' : '', color: activeTab !== 'resources' ? '#3f3f46' : '' }}
-          >
-            <Server size={18} /> Resources
-          </button>
-          <button
-            className={`btn ${activeTab === 'logs' ? 'btn-primary' : ''}`}
-            onClick={() => setActiveTab('logs')}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0, background: activeTab !== 'logs' ? '#e4e4e7' : '', color: activeTab !== 'logs' ? '#3f3f46' : '' }}
-          >
-            <Activity size={18} /> System Logs
-          </button>
-          <button
-            className={`btn ${activeTab === 'users' ? 'btn-primary' : ''}`}
-            onClick={() => setActiveTab('users')}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0, background: activeTab !== 'users' ? '#e4e4e7' : '', color: activeTab !== 'users' ? '#3f3f46' : '' }}
-          >
-            <Users size={18} /> User Access
-          </button>
-          <button
-            className={`btn ${activeTab === 'bookings' ? 'btn-primary' : ''}`}
-            onClick={() => setActiveTab('bookings')}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0, background: activeTab !== 'bookings' ? '#e4e4e7' : '', color: activeTab !== 'bookings' ? '#3f3f46' : '' }}
-          >
-            <CalendarCheck size={18} /> Booking Requests
-          </button>
-          <button
-            className={`btn ${activeTab === 'tickets' ? 'btn-primary' : ''}`}
-            onClick={() => setActiveTab('tickets')}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0, background: activeTab !== 'tickets' ? '#e4e4e7' : '', color: activeTab !== 'tickets' ? '#3f3f46' : '' }}
-          >
-            <Wrench size={18} /> Tickets
-          </button>
+      {/* PAGE HEADER */}
+      <div style={{
+        background: 'linear-gradient(135deg, #09090b 0%, #18181b 40%, #1e3a5f 100%)',
+        borderRadius: '16px', padding: '2rem 2.5rem', color: 'white', marginBottom: '1.5rem',
+        boxShadow: '0 10px 25px rgba(0,0,0,0.15)', position: 'relative', overflow: 'hidden'
+      }}>
+        <div style={{
+          position: 'absolute', width: '300px', height: '300px', borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(59,130,246,0.1) 0%, transparent 70%)',
+          top: '-100px', right: '-50px'
+        }} />
+        <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+              <Shield size={16} />
+              <span style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '1px', color: '#93c5fd' }}>Administration</span>
+            </div>
+            <h1 style={{ margin: '0 0 0.25rem', fontSize: '1.75rem', fontWeight: 800 }}>Control Panel</h1>
+            <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.92rem' }}>Manage campus facilities, users, bookings & tickets</p>
+          </div>
+
+          {/* Tab Navigation */}
+          <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+            {[
+              { key: 'resources', label: 'Resources', icon: Server },
+              { key: 'logs', label: 'Logs', icon: Activity },
+              { key: 'users', label: 'Users', icon: Users },
+              { key: 'bookings', label: 'Bookings', icon: CalendarCheck },
+              { key: 'tickets', label: 'Tickets', icon: Wrench },
+            ].map(({ key, label, icon: Icon }) => (
+              <button key={key} onClick={() => setActiveTab(key)} style={{
+                display: 'flex', alignItems: 'center', gap: '0.35rem',
+                padding: '0.4rem 0.85rem', borderRadius: '8px', border: 'none',
+                fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer',
+                background: activeTab === key ? 'rgba(255,255,255,0.15)' : 'transparent',
+                color: activeTab === key ? 'white' : 'rgba(255,255,255,0.5)',
+                backdropFilter: activeTab === key ? 'blur(4px)' : 'none',
+                transition: 'all 0.2s'
+              }}>
+                <Icon size={14} /> {label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* --- RESOURCES TAB --- */}
       {activeTab === 'resources' && (
         <>
-          <div className="form-container">
-            <h2>{editingId ? 'Edit Resource' : 'Add New Resource'}</h2>
-            <form onSubmit={handleResourceSubmit}>
-              <div className="form-grid">
-                <div className="form-group"><label>Name</label><input type="text" name="name" value={formData.name} onChange={handleResourceChange} required /></div>
-                <div className="form-group"><label>Type</label><select name="type" value={formData.type} onChange={handleResourceChange}><option value="LECTURE_HALL">Lecture Hall</option><option value="LAB">Lab</option><option value="MEETING_ROOM">Meeting Room</option><option value="EQUIPMENT">Equipment</option></select></div>
-                <div className="form-group"><label>Capacity</label><input type="number" name="capacity" value={formData.capacity} onChange={handleResourceChange} required /></div>
-                <div className="form-group"><label>Location</label><input type="text" name="location" value={formData.location} onChange={handleResourceChange} required /></div>
-                <div className="form-group"><label>Status</label><select name="status" value={formData.status} onChange={handleResourceChange}><option value="ACTIVE">Active</option><option value="MAINTENANCE">Maintenance</option><option value="OUT_OF_SERVICE">Out of Service</option></select></div>
-                <div className="form-group"><label>Features (comma separated)</label><input type="text" name="features" value={formData.features} onChange={handleResourceChange} /></div>
-                {/* IMAGE INPUT */}
-                <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                  <label>Cover Image URL</label>
-                  <input type="url" name="imageUrl" placeholder="https://example.com/image.jpg" value={formData.imageUrl || ''} onChange={handleResourceChange} />
-                  {formData.imageUrl && (
-                    <div style={{ marginTop: '0.5rem', borderRadius: '8px', overflow: 'hidden', height: '120px', background: '#f4f4f5' }}>
-                      <img
-                        src={formData.imageUrl}
-                        alt="Preview"
-                        referrerPolicy="no-referrer"
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                        onError={(e) => { e.target.style.display = 'none' }}
-                        onLoad={(e) => { e.target.style.display = 'block' }}
-                      />
-                    </div>
+          {/* Resource Form */}
+          <div style={{
+            background: 'white', borderRadius: '16px', border: '1px solid #e4e4e7',
+            overflow: 'hidden', marginBottom: '2rem', boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
+          }}>
+            <div style={{ background: '#09090b', padding: '1.25rem 1.5rem', color: 'white' }}>
+              <h3 style={{ margin: '0 0 0.25rem', fontSize: '1.05rem', fontWeight: 700 }}>
+                {editingId ? '✏️ Edit Resource' : '➕ Add New Resource'}
+              </h3>
+              <p style={{ margin: 0, color: '#71717a', fontSize: '0.82rem' }}>
+                {editingId ? 'Update the resource details below' : 'Fill in the details to create a new campus resource'}
+              </p>
+            </div>
+
+            <div style={{ padding: '1.5rem' }}>
+              <form onSubmit={handleResourceSubmit}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  {/* Name */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#3f3f46', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Name</label>
+                    <input type="text" name="name" value={formData.name} onChange={handleResourceChange} required placeholder="e.g., Lab A-201" style={{
+                      width: '100%', padding: '0.65rem 0.85rem', borderRadius: '10px',
+                      border: '1px solid #e4e4e7', fontSize: '0.92rem', background: '#fafafa', color: '#18181b', boxSizing: 'border-box',
+                      transition: 'border-color 0.2s', outline: 'none'
+                    }} onFocus={e => e.target.style.borderColor = '#3b82f6'} onBlur={e => e.target.style.borderColor = '#e4e4e7'} />
+                  </div>
+
+                  {/* Type */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#3f3f46', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Type</label>
+                    <select name="type" value={formData.type} onChange={handleResourceChange} style={{
+                      width: '100%', padding: '0.65rem 0.85rem', borderRadius: '10px',
+                      border: '1px solid #e4e4e7', fontSize: '0.92rem', background: '#fafafa', color: '#18181b', boxSizing: 'border-box', cursor: 'pointer'
+                    }}>
+                      <option value="LECTURE_HALL">Lecture Hall</option>
+                      <option value="LAB">Lab</option>
+                      <option value="MEETING_ROOM">Meeting Room</option>
+                      <option value="EQUIPMENT">Equipment</option>
+                    </select>
+                  </div>
+
+                  {/* Capacity */}
+                  <div>
+                    <label style={{ display: '0.78rem', fontSize: '0.78rem', fontWeight: 700, color: '#3f3f46', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Capacity</label>
+                    <input type="number" name="capacity" value={formData.capacity} onChange={handleResourceChange} required style={{
+                      width: '100%', padding: '0.65rem 0.85rem', borderRadius: '10px',
+                      border: '1px solid #e4e4e7', fontSize: '0.92rem', background: '#fafafa', color: '#18181b', boxSizing: 'border-box',
+                      transition: 'border-color 0.2s', outline: 'none'
+                    }} onFocus={e => e.target.style.borderColor = '#3b82f6'} onBlur={e => e.target.style.borderColor = '#e4e4e7'} />
+                  </div>
+
+                  {/* Location */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#3f3f46', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Location</label>
+                    <input type="text" name="location" value={formData.location} onChange={handleResourceChange} required placeholder="e.g., Building C, Floor 2" style={{
+                      width: '100%', padding: '0.65rem 0.85rem', borderRadius: '10px',
+                      border: '1px solid #e4e4e7', fontSize: '0.92rem', background: '#fafafa', color: '#18181b', boxSizing: 'border-box',
+                      transition: 'border-color 0.2s', outline: 'none'
+                    }} onFocus={e => e.target.style.borderColor = '#3b82f6'} onBlur={e => e.target.style.borderColor = '#e4e4e7'} />
+                  </div>
+
+                  {/* Status */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#3f3f46', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Status</label>
+                    <select name="status" value={formData.status} onChange={handleResourceChange} style={{
+                      width: '100%', padding: '0.65rem 0.85rem', borderRadius: '10px',
+                      border: '1px solid #e4e4e7', fontSize: '0.92rem', background: '#fafafa', color: '#18181b', boxSizing: 'border-box', cursor: 'pointer'
+                    }}>
+                      <option value="ACTIVE">Active</option>
+                      <option value="MAINTENANCE">Maintenance</option>
+                      <option value="OUT_OF_SERVICE">Out of Service</option>
+                    </select>
+                  </div>
+
+                  {/* Features */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#3f3f46', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Features (comma separated)</label>
+                    <input type="text" name="features" value={formData.features} onChange={handleResourceChange} placeholder="e.g., Projector, Whiteboard, AC" style={{
+                      width: '100%', padding: '0.65rem 0.85rem', borderRadius: '10px',
+                      border: '1px solid #e4e4e7', fontSize: '0.92rem', background: '#fafafa', color: '#18181b', boxSizing: 'border-box',
+                      transition: 'border-color 0.2s', outline: 'none'
+                    }} onFocus={e => e.target.style.borderColor = '#3b82f6'} onBlur={e => e.target.style.borderColor = '#e4e4e7'} />
+                  </div>
+                </div>
+
+                {/* Image URL — full width */}
+                <div style={{ marginTop: '1rem' }}>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#3f3f46', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Cover Image URL</label>
+                  <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+                    <input type="url" name="imageUrl" placeholder="https://example.com/image.jpg" value={formData.imageUrl || ''} onChange={handleResourceChange} style={{
+                      flex: 1, padding: '0.65rem 0.85rem', borderRadius: '10px',
+                      border: '1px solid #e4e4e7', fontSize: '0.92rem', background: '#fafafa', color: '#18181b', boxSizing: 'border-box',
+                      transition: 'border-color 0.2s', outline: 'none'
+                    }} onFocus={e => e.target.style.borderColor = '#3b82f6'} onBlur={e => e.target.style.borderColor = '#e4e4e7'} />
+                    {formData.imageUrl && (
+                      <div style={{ width: '120px', height: '60px', borderRadius: '8px', overflow: 'hidden', background: '#f4f4f5', flexShrink: 0, border: '1px solid #e4e4e7' }}>
+                        <img
+                          src={formData.imageUrl} alt="Preview" referrerPolicy="no-referrer"
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          onError={(e) => { e.target.style.display = 'none' }}
+                          onLoad={(e) => { e.target.style.display = 'block' }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Submit */}
+                <div style={{ marginTop: '1.25rem', display: 'flex', gap: '0.75rem' }}>
+                  <button type="submit" style={{
+                    padding: '0.7rem 1.5rem', fontSize: '0.92rem', fontWeight: 700,
+                    background: 'linear-gradient(135deg, #18181b, #27272a)', color: 'white',
+                    border: 'none', borderRadius: '10px', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', gap: '0.4rem',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.12)', transition: 'opacity 0.2s'
+                  }}
+                    onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
+                    onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+                  >
+                    <Server size={15} /> {editingId ? 'Update Resource' : 'Save Resource'}
+                  </button>
+                  {editingId && (
+                    <button type="button" onClick={() => {
+                      setEditingId(null);
+                      setFormData({ name: '', type: 'LECTURE_HALL', capacity: 0, location: '', status: 'ACTIVE', features: '', imageUrl: '' });
+                    }} style={{
+                      padding: '0.7rem 1.5rem', fontSize: '0.92rem', fontWeight: 600,
+                      background: '#f4f4f5', color: '#52525b', border: 'none', borderRadius: '10px', cursor: 'pointer',
+                      transition: 'background 0.2s'
+                    }}
+                      onMouseEnter={e => e.currentTarget.style.background = '#e4e4e7'}
+                      onMouseLeave={e => e.currentTarget.style.background = '#f4f4f5'}
+                    >
+                      Cancel Edit
+                    </button>
                   )}
                 </div>
-              </div>
-              <button type="submit" className="btn btn-primary">{editingId ? 'Update Resource' : 'Save New Resource'}</button>
-            </form>
+              </form>
+            </div>
           </div>
 
+          {/* Resource Stats */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.75rem', marginBottom: '1.5rem' }}>
+            {[
+              { label: 'Total', count: resources.length, color: '#3b82f6' },
+              { label: 'Active', count: resources.filter(r => r.status === 'ACTIVE').length, color: '#22c55e' },
+              { label: 'Maintenance', count: resources.filter(r => r.status === 'MAINTENANCE').length, color: '#f59e0b' },
+              { label: 'Out of Service', count: resources.filter(r => r.status === 'OUT_OF_SERVICE').length, color: '#ef4444' },
+            ].map(({ label, count, color }, i) => (
+              <div key={i} style={{
+                background: 'white', borderRadius: '12px', padding: '1rem 1.25rem',
+                border: '1px solid #e4e4e7', display: 'flex', alignItems: 'center', gap: '0.75rem'
+              }}>
+                <div style={{ width: '8px', height: '32px', borderRadius: '4px', background: color }} />
+                <div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#18181b' }}>{count}</div>
+                  <div style={{ fontSize: '0.78rem', color: '#71717a', fontWeight: 600 }}>{label}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Resource Cards Grid */}
           <div className="grid">
             {resources.map((resource) => {
-              // Health Bar Color Logic
               const health = resource.currentHealthScore || 100;
               const healthColor = health > 70 ? '#22c55e' : health > 25 ? '#eab308' : '#ef4444';
+              const statusBg = resource.status === 'ACTIVE' ? 'rgba(34,197,94,0.9)' : resource.status === 'MAINTENANCE' ? 'rgba(234,179,8,0.9)' : 'rgba(239,68,68,0.9)';
 
               return (
-                <div key={resource.id} className="card" style={{ border: resource.maintenanceAlert ? '2px solid #ef4444' : '1px solid #e4e4e7', overflow: 'hidden', padding: 0 }}>
-
-                  {/* Card Image Header */}
+                <div key={resource.id} style={{
+                  background: 'white', borderRadius: '14px', overflow: 'hidden',
+                  border: resource.maintenanceAlert ? '2px solid #ef4444' : '1px solid #e4e4e7',
+                  transition: 'transform 0.3s, box-shadow 0.3s', padding: 0
+                }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 12px 24px rgba(0,0,0,0.06)' }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none' }}
+                >
+                  {/* Image Header */}
                   <div style={{ height: '200px', width: '100%', background: '#f4f4f5', position: 'relative' }}>
                     <img
                       src={resource.imageUrl || 'https://images.unsplash.com/photo-1598620617377-3bfb505b4384?auto=format&fit=crop&q=80&w=800'}
-                      alt={resource.name}
-                      referrerPolicy="no-referrer"
+                      alt={resource.name} referrerPolicy="no-referrer"
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                       onError={(e) => { if (!e.target.dataset.fallback) { e.target.dataset.fallback = '1'; e.target.src = 'https://images.unsplash.com/photo-1598620617377-3bfb505b4384?auto=format&fit=crop&q=80&w=800'; } }}
                     />
-                    <span className={`status-badge status-${resource.status}`} style={{ position: 'absolute', top: '0.75rem', right: '0.75rem', boxShadow: '0 4px 6px rgba(0,0,0,0.3)' }}>
+                    <span style={{
+                      position: 'absolute', top: '0.75rem', right: '0.75rem',
+                      padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.72rem',
+                      fontWeight: 700, backdropFilter: 'blur(8px)', background: statusBg,
+                      color: 'white', boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+                    }}>
                       {resource.status.replace(/_/g, ' ')}
                     </span>
                     {resource.maintenanceAlert && (
-                      <span title="AI Maintenance Alert" style={{ position: 'absolute', top: '0.75rem', left: '0.75rem', animation: 'pulse-red 2s infinite', fontSize: '1.25rem' }}>⚠️</span>
+                      <span title="AI Maintenance Alert" style={{
+                        position: 'absolute', top: '0.75rem', left: '0.75rem',
+                        animation: 'pulse-red 2s infinite', fontSize: '1.1rem',
+                        background: 'rgba(0,0,0,0.4)', borderRadius: '6px', padding: '0.2rem 0.5rem',
+                        backdropFilter: 'blur(4px)'
+                      }}>⚠️</span>
                     )}
                   </div>
 
                   {/* Card Body */}
                   <div style={{ padding: '1.25rem' }}>
-                    <h3 style={{ margin: '0 0 0.5rem 0' }}>{resource.name}</h3>
-                    <p style={{ margin: 0, fontSize: '0.9rem', color: '#52525b' }}>
-                      {resource.type} • {resource.location}
-                    </p>
+                    <h3 style={{ margin: '0 0 0.35rem', fontSize: '1.05rem', fontWeight: 700, color: '#18181b' }}>{resource.name}</h3>
+                    <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.82rem', color: '#71717a', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+                      <span style={{ background: '#f4f4f5', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: 600 }}>
+                        {resource.type.replace(/_/g, ' ')}
+                      </span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>📍 {resource.location}</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>👥 {resource.capacity}</span>
+                    </div>
 
-                    {/* AI Predictive Health Bar */}
-                    <div style={{ marginTop: '1rem', background: '#f4f4f5', padding: '0.75rem', borderRadius: '8px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.25rem', fontWeight: 'bold', color: '#3f3f46' }}>
-                        <span>AI Health Forecast</span>
+                    {/* Health Bar */}
+                    <div style={{ background: '#f8fafc', padding: '0.6rem 0.75rem', borderRadius: '8px', marginBottom: '0.75rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', marginBottom: '0.2rem', fontWeight: 700 }}>
+                        <span style={{ color: '#52525b' }}>AI Health</span>
                         <span style={{ color: healthColor }}>{health}%</span>
                       </div>
-                      <div style={{ width: '100%', height: '8px', background: '#e4e4e7', borderRadius: '4px', overflow: 'hidden' }}>
-                        <div style={{ width: `${health}%`, height: '100%', background: healthColor, transition: 'width 0.5s ease-in-out' }}></div>
+                      <div style={{ width: '100%', height: '6px', background: '#e4e4e7', borderRadius: '99px', overflow: 'hidden' }}>
+                        <div style={{ width: `${health}%`, height: '100%', background: healthColor, borderRadius: '99px', transition: 'width 0.5s' }} />
                       </div>
                       {resource.maintenanceAlert && (
-                        <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: '#ef4444', fontWeight: 'bold' }}>
-                          Predictive Failure Imminent. Service required.
+                        <div style={{ marginTop: '0.35rem', fontSize: '0.72rem', color: '#ef4444', fontWeight: 700 }}>
+                          ⚠ Predictive failure — service required
                         </div>
                       )}
                     </div>
 
-                    <div className="admin-actions" style={{ marginTop: '1rem' }}>
-                      <button onClick={() => handleEditResource(resource)} className="btn btn-edit">Edit</button>
-                      <button onClick={() => handleDeleteResource(resource.id)} className="btn btn-danger">Delete</button>
+                    {/* Actions */}
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button onClick={() => handleEditResource(resource)} style={{
+                        flex: 1, padding: '0.5rem', borderRadius: '8px', border: '1px solid #e4e4e7',
+                        background: '#fafafa', color: '#18181b', fontSize: '0.82rem', fontWeight: 700,
+                        cursor: 'pointer', transition: 'all 0.2s'
+                      }}
+                        onMouseEnter={e => { e.currentTarget.style.background = '#f4f4f5' }}
+                        onMouseLeave={e => { e.currentTarget.style.background = '#fafafa' }}
+                      >✏️ Edit</button>
+                      <button onClick={() => handleDeleteResource(resource)} style={{
+                        flex: 1, padding: '0.5rem', borderRadius: '8px', border: '1px solid #fecaca',
+                        background: 'transparent', color: '#ef4444', fontSize: '0.82rem', fontWeight: 700,
+                        cursor: 'pointer', transition: 'all 0.2s'
+                      }}
+                        onMouseEnter={e => { e.currentTarget.style.background = '#fef2f2' }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+                      >🗑 Delete</button>
                     </div>
                   </div>
                 </div>
@@ -531,6 +717,94 @@ export default function AdminDashboard() {
           </>
         )
       })()}
+
+      {/* DELETE CONFIRMATION MODAL */}
+      {deleteConfirm && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+          background: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center',
+          alignItems: 'center', zIndex: 2000, backdropFilter: 'blur(4px)',
+          animation: 'fadeIn 0.2s ease-out'
+        }} onClick={() => setDeleteConfirm(null)}>
+          <div style={{
+            background: 'white', borderRadius: '20px', width: '90%', maxWidth: '420px',
+            overflow: 'hidden', boxShadow: '0 30px 60px rgba(0,0,0,0.25)',
+            animation: 'fadeIn 0.25s ease-out'
+          }} onClick={e => e.stopPropagation()}>
+            {/* Red Warning Header */}
+            <div style={{
+              background: 'linear-gradient(135deg, #ef4444, #dc2626)', padding: '1.5rem',
+              textAlign: 'center', color: 'white'
+            }}>
+              <div style={{
+                width: '56px', height: '56px', borderRadius: '50%',
+                background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(10px)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                margin: '0 auto 0.75rem', fontSize: '1.5rem'
+              }}>🗑️</div>
+              <h3 style={{ margin: '0 0 0.25rem', fontSize: '1.15rem', fontWeight: 800 }}>Delete Resource</h3>
+              <p style={{ margin: 0, fontSize: '0.85rem', color: 'rgba(255,255,255,0.8)' }}>This action cannot be undone</p>
+            </div>
+
+            {/* Body */}
+            <div style={{ padding: '1.5rem' }}>
+              <p style={{ margin: '0 0 0.5rem', fontSize: '0.92rem', color: '#3f3f46', textAlign: 'center', lineHeight: 1.6 }}>
+                Are you sure you want to permanently delete
+              </p>
+              <div style={{
+                background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '10px',
+                padding: '0.75rem 1rem', textAlign: 'center', marginBottom: '1.5rem'
+              }}>
+                <div style={{ fontWeight: 800, fontSize: '1rem', color: '#18181b' }}>{deleteConfirm.name}</div>
+                <div style={{ fontSize: '0.82rem', color: '#71717a', marginTop: '0.15rem' }}>
+                  {deleteConfirm.type?.replace(/_/g, ' ')} · {deleteConfirm.location}
+                </div>
+              </div>
+
+              <p style={{
+                margin: '0 0 1.25rem', fontSize: '0.82rem', color: '#71717a', textAlign: 'center',
+                lineHeight: 1.5, padding: '0 0.5rem'
+              }}>
+                All bookings associated with this resource will be affected. This operation is irreversible.
+              </p>
+
+              {/* Action Buttons */}
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <button onClick={() => setDeleteConfirm(null)} style={{
+                  flex: 1, padding: '0.7rem', borderRadius: '10px', border: '1px solid #e4e4e7',
+                  background: '#fafafa', color: '#3f3f46', fontSize: '0.92rem', fontWeight: 700,
+                  cursor: 'pointer', transition: 'background 0.2s'
+                }}
+                  onMouseEnter={e => e.currentTarget.style.background = '#f4f4f5'}
+                  onMouseLeave={e => e.currentTarget.style.background = '#fafafa'}
+                >
+                  Cancel
+                </button>
+                <button onClick={confirmDelete} style={{
+                  flex: 1, padding: '0.7rem', borderRadius: '10px', border: 'none',
+                  background: 'linear-gradient(135deg, #ef4444, #dc2626)', color: 'white',
+                  fontSize: '0.92rem', fontWeight: 700, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
+                  boxShadow: '0 4px 12px rgba(239,68,68,0.3)', transition: 'opacity 0.2s'
+                }}
+                  onMouseEnter={e => e.currentTarget.style.opacity = '0.9'}
+                  onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+                >
+                  🗑️ Delete Forever
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Inline animation */}
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: scale(0.95); }
+          to { opacity: 1; transform: scale(1); }
+        }
+      `}</style>
     </div>
   )
 }

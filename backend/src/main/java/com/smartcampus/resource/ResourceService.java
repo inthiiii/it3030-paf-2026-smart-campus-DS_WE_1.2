@@ -22,7 +22,7 @@ public class ResourceService {
     private ResourceRepository repository;
 
     @Autowired
-    private BookingRepository bookingRepository; // NEW: Needed to calculate Wear and Tear
+    private BookingRepository bookingRepository; // To calculate Wear and Tear
 
     @Autowired
     private RestTemplate restTemplate;
@@ -32,7 +32,7 @@ public class ResourceService {
     public Resource createResource(Resource resource) {
         // 1. Save to MongoDB first to get the ID
         if (resource.getCreatedAt() == null) {
-            resource.setCreatedAt(LocalDateTime.now()); // Ensure creation date is set for the AI
+            resource.setCreatedAt(LocalDateTime.now());
         }
         Resource savedResource = repository.save(resource);
 
@@ -77,11 +77,10 @@ public class ResourceService {
         return List.of(); 
     }
 
-    // --- NEW: PREDICTIVE MAINTENANCE LOGIC ---
+    // --- PREDICTIVE MAINTENANCE LOGIC ---
     
     // This autonomous robot runs in the background. 
-    // Right now, it runs every 60 seconds (60000ms) so you can test it for your presentation!
-    // In production, you would change this to run nightly using: @Scheduled(cron = "0 0 2 * * ?")
+    // Right now, it runs every 60 seconds (60000ms) so can test
     @Scheduled(fixedRate = 60000)
     public void runAutonomousHealthCheck() {
         System.out.println("⚙️ [AI_CRON] Running Autonomous Asset Health Diagnostics...");
@@ -133,7 +132,7 @@ public class ResourceService {
             repository.save(resource);
 
         } catch (Exception e) {
-            // Fails silently so it doesn't crash the server if Python is turned off
+            
         }
     }
 

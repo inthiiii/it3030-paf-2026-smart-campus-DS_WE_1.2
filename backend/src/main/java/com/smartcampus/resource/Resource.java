@@ -5,8 +5,8 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import lombok.Data;
 import java.util.List;
 
-@Data // Lombok automatically creates Getters and Setters for you!
-@Document(collection = "resources") // Tells MongoDB to save this in a 'resources' collection
+@Data 
+@Document(collection = "resources") 
 public class Resource {
 
     @Id
@@ -25,7 +25,7 @@ public class Resource {
     private Double currentHealthScore = 100.0; // Defaults to perfect health
     private boolean maintenanceAlert = false;
     
-    // Enums to keep your data strict and avoid typos
+    // Enums to keep data strict and avoid typos
     public enum ResourceType {
         LECTURE_HALL, LAB, MEETING_ROOM, EQUIPMENT
     }

@@ -18,7 +18,7 @@ public class ResourceController {
     private ResourceService service;
 
     @Autowired
-    private AuditService auditService; // INJECTED
+    private AuditService auditService; 
 
     // 1. POST: Create a new resource
     @PostMapping

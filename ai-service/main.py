@@ -72,13 +72,14 @@ def search_resources(request: SearchRequest):
     query_vector = model.encode(request.query).tolist()
     results = index.query(vector=query_vector, top_k=request.top_k, include_metadata=False)
     match_ids = [match['id'] for match in results['matches']]
-    return {"matches": match_ids}
+    match_scores = {match['id']: float(match['score']) for match in results['matches']}
+    return {"matches": match_ids, "scores": match_scores}
 
 @app.get("/health")
 def health_check():
     return {"status": "AI Engine is Online"}
 
-# --- NEW: Damage Assessment Endpoint ---
+# --- Damage Assessment Endpoint ---
 
 @app.post("/api/analyze-damage")
 def analyze_damage(request: DamageAssessmentRequest):
@@ -92,7 +93,6 @@ def analyze_damage(request: DamageAssessmentRequest):
     """
     try:
         # Strip the data URL prefix to get raw base64 bytes
-        # imageBase64 looks like: "data:image/jpeg;base64,/9j/..."
         if "," in request.imageBase64:
             raw_base64 = request.imageBase64.split(",")[1]
             mime_type = request.imageBase64.split(";")[0].replace("data:", "")
@@ -170,7 +170,7 @@ Rules:
             }
         }
 
-# --- NEW: Resolution Steps Endpoint ---
+# --- Resolution Steps Endpoint ---
 
 class ResolutionStepsRequest(BaseModel):
     faultCategory: str = "OTHER"

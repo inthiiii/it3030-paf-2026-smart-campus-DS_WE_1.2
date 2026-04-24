@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
-import { MapPin, Users, MonitorPlay, ServerCrash, Search, LayoutGrid, Map, Filter, X, Zap, Sparkles, Brain } from 'lucide-react'
+import { MapPin, Users, MonitorPlay, ServerCrash, Search, LayoutGrid, Map, Filter, X, Zap, Sparkles, Brain, Target, Shuffle } from 'lucide-react'
 
 export default function UserDashboard() {
   const [resources, setResources] = useState([])
@@ -11,6 +11,11 @@ export default function UserDashboard() {
   const [viewMode, setViewMode] = useState('grid')
   const [filterType, setFilterType] = useState('ALL')
   const [minCapacity, setMinCapacity] = useState(0)
+  const [hasSearched, setHasSearched] = useState(false)
+
+  // Exact vs Alternative matches
+  const [exactMatches, setExactMatches] = useState([])
+  const [alternativeMatches, setAlternativeMatches] = useState([])
 
   // Map Enhancement & AI Alternatives State
   const [selectedResource, setSelectedResource] = useState(null)
@@ -26,23 +31,91 @@ export default function UserDashboard() {
       const response = await axios.get('http://localhost:8080/api/resources')
       setResources(response.data)
       setLoading(false)
+      setHasSearched(false)
+      setExactMatches([])
+      setAlternativeMatches([])
     } catch (error) {
       console.error('Error fetching resources:', error)
       setLoading(false)
     }
   }
 
-  // Handle Standard AI Text Search
+  // Improved search: local keyword matching + AI semantic, split into exact & alternative
   const handleSearch = async (e) => {
     e.preventDefault()
     setLoading(true)
     try {
       if (searchQuery.trim() === '') {
         await fetchResources()
-      } else {
-        const response = await axios.get(`http://localhost:8080/api/resources/search?q=${searchQuery}`)
-        setResources(response.data)
+        return
       }
+
+      // 1. Fetch ALL resources for local keyword matching
+      const allRes = await axios.get('http://localhost:8080/api/resources')
+      const allResources = allRes.data
+      const query = searchQuery.toLowerCase().trim()
+      const queryTerms = query.split(/\s+/).filter(t => t.length > 1)
+
+      // 2. Local exact keyword scoring
+      const scored = allResources.map(r => {
+        let score = 0
+        const name = (r.name || '').toLowerCase()
+        const type = (r.type || '').toLowerCase().replace(/_/g, ' ')
+        const location = (r.location || '').toLowerCase()
+        const features = (r.features || []).join(' ').toLowerCase()
+        const combined = `${name} ${type} ${location} ${features}`
+
+        // Exact name match = highest weight
+        if (name.includes(query)) score += 100
+        // Type match
+        if (type.includes(query)) score += 80
+        // Location match
+        if (location.includes(query)) score += 60
+
+        // Individual term matching
+        for (const term of queryTerms) {
+          if (name.includes(term)) score += 40
+          if (type.includes(term)) score += 30
+          if (location.includes(term)) score += 20
+          if (features.includes(term)) score += 15
+        }
+
+        // Capacity match (if query mentions a number)
+        const numberMatch = query.match(/\d+/)
+        if (numberMatch && r.capacity >= parseInt(numberMatch[0])) score += 10
+
+        return { ...r, localScore: score }
+      })
+
+      // 3. Separate exact (local keyword) hits vs not
+      const localExact = scored.filter(r => r.localScore > 0).sort((a, b) => b.localScore - a.localScore)
+      const localExactIds = new Set(localExact.map(r => r.id))
+
+      // 4. Also fetch AI semantic results
+      let semanticResults = []
+      try {
+        const aiRes = await axios.get(`http://localhost:8080/api/resources/search?q=${encodeURIComponent(searchQuery)}`)
+        semanticResults = aiRes.data
+      } catch (err) {
+        console.error('Semantic search failed, using local only:', err)
+      }
+
+      // 5. Alternative = AI semantic results NOT already in exact matches
+      const alternatives = semanticResults.filter(r => !localExactIds.has(r.id))
+
+      // 6. If no local exact matches, promote top 3 semantic results to exact
+      if (localExact.length === 0 && semanticResults.length > 0) {
+        setExactMatches(semanticResults.slice(0, 3))
+        setAlternativeMatches(semanticResults.slice(3))
+      } else {
+        setExactMatches(localExact)
+        setAlternativeMatches(alternatives)
+      }
+
+      // Combined for filters & map view
+      const combined = [...localExact, ...alternatives.filter(r => !localExactIds.has(r.id))]
+      setResources(combined.length > 0 ? combined : [])
+      setHasSearched(true)
     } catch (error) {
       console.error('Error searching resources:', error)
     } finally {
@@ -50,7 +123,16 @@ export default function UserDashboard() {
     }
   }
 
-  // NEW AI FEATURE: Smart Alternatives Finder
+  // Clear search
+  const clearSearch = () => {
+    setSearchQuery('')
+    setHasSearched(false)
+    setExactMatches([])
+    setAlternativeMatches([])
+    fetchResources()
+  }
+
+  // Smart Alternatives Finder for non-active resources
   const findAlternatives = async (brokenResource) => {
     setFindingAlternatives(true)
     try {
@@ -90,6 +172,50 @@ export default function UserDashboard() {
     acc[loc].push(resource);
     return acc;
   }, {});
+
+  // Resource card component
+  const ResourceCard = ({ resource }) => (
+    <div onClick={() => handleNodeClick(resource)} style={{
+      cursor: 'pointer', overflow: 'hidden', padding: 0,
+      background: 'white', borderRadius: '14px',
+      border: '1px solid #e4e4e7', transition: 'transform 0.3s, box-shadow 0.3s'
+    }}
+      onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 16px 32px rgba(0,0,0,0.08)' }}
+      onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none' }}
+    >
+      <div style={{ height: '200px', width: '100%', background: '#f4f4f5', position: 'relative' }}>
+        <img 
+          src={resource.imageUrl || 'https://images.unsplash.com/photo-1598620617377-3bfb505b4384?auto=format&fit=crop&q=80&w=800'} 
+          alt={resource.name} referrerPolicy="no-referrer"
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          onError={(e) => { if (!e.target.dataset.fallback) { e.target.dataset.fallback = '1'; e.target.src = 'https://images.unsplash.com/photo-1598620617377-3bfb505b4384?auto=format&fit=crop&q=80&w=800'; } }} 
+        />
+        <span style={{
+          position: 'absolute', top: '0.75rem', right: '0.75rem',
+          padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.72rem',
+          fontWeight: 700, backdropFilter: 'blur(8px)',
+          background: resource.status === 'ACTIVE' ? 'rgba(34,197,94,0.9)' : resource.status === 'MAINTENANCE' ? 'rgba(234,179,8,0.9)' : 'rgba(239,68,68,0.9)',
+          color: 'white', boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+        }}>
+          {resource.status.replace(/_/g, ' ')}
+        </span>
+      </div>
+      <div style={{ padding: '1.25rem' }}>
+        <h3 style={{ margin: '0 0 0.6rem', fontSize: '1.05rem', fontWeight: 700, color: '#18181b' }}>{resource.name}</h3>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', color: '#52525b' }}>
+            <MonitorPlay size={15} color="#8b5cf6" /> {resource.type.replace(/_/g, ' ')}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', color: '#52525b' }}>
+            <Users size={15} color="#3b82f6" /> Capacity: {resource.capacity}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', color: '#52525b' }}>
+            <MapPin size={15} color="#f59e0b" /> {resource.location}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 
   return (
     <div className="dashboard">
@@ -140,7 +266,7 @@ export default function UserDashboard() {
               }} 
             />
             {searchQuery && (
-              <button type="button" onClick={() => { setSearchQuery(''); fetchResources() }} style={{
+              <button type="button" onClick={clearSearch} style={{
                 background: 'none', border: 'none', cursor: 'pointer', color: '#a1a1aa', padding: '0.2rem'
               }}><X size={16} /></button>
             )}
@@ -189,7 +315,6 @@ export default function UserDashboard() {
             ))}
           </div>
 
-          {/* Divider */}
           <div style={{ width: '1px', height: '20px', background: '#e4e4e7' }} />
 
           {/* Capacity Slider */}
@@ -234,7 +359,6 @@ export default function UserDashboard() {
           <Map size={16} /> Campus Map
         </button>
 
-        {/* Results count */}
         <div style={{
           marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.4rem',
           fontSize: '0.85rem', color: '#71717a', background: '#f4f4f5',
@@ -267,54 +391,82 @@ export default function UserDashboard() {
         </div>
       ) : (
         <>
-          {/* GRID VIEW */}
-          {viewMode === 'grid' && (
-            <div className="grid">
-              {filteredResources.map((resource) => (
-                <div key={resource.id} onClick={() => handleNodeClick(resource)} style={{
-                  cursor: 'pointer', overflow: 'hidden', padding: 0,
-                  background: 'white', borderRadius: '14px',
-                  border: '1px solid #e4e4e7', transition: 'transform 0.3s, box-shadow 0.3s'
-                }}
-                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 16px 32px rgba(0,0,0,0.08)' }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none' }}
-                >
-                  {/* Image Header */}
-                  <div style={{ height: '200px', width: '100%', background: '#f4f4f5', position: 'relative' }}>
-                    <img 
-                      src={resource.imageUrl || 'https://images.unsplash.com/photo-1598620617377-3bfb505b4384?auto=format&fit=crop&q=80&w=800'} 
-                      alt={resource.name} 
-                      referrerPolicy="no-referrer"
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      onError={(e) => { if (!e.target.dataset.fallback) { e.target.dataset.fallback = '1'; e.target.src = 'https://images.unsplash.com/photo-1598620617377-3bfb505b4384?auto=format&fit=crop&q=80&w=800'; } }} 
-                    />
+          {/* SEARCH RESULTS — SPLIT VIEW */}
+          {hasSearched && viewMode === 'grid' && (
+            <>
+              {/* Exact Matches Section */}
+              {exactMatches.length > 0 && (
+                <div style={{ marginBottom: '2rem' }}>
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1rem',
+                    padding: '0.75rem 1rem', background: '#f0fdf4', borderRadius: '10px', border: '1px solid #bbf7d0'
+                  }}>
+                    <Target size={18} color="#16a34a" />
+                    <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: '#166534' }}>
+                      Exact Matches
+                    </h3>
                     <span style={{
-                      position: 'absolute', top: '0.75rem', right: '0.75rem',
-                      padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.72rem',
-                      fontWeight: 700, backdropFilter: 'blur(8px)',
-                      background: resource.status === 'ACTIVE' ? 'rgba(34,197,94,0.9)' : resource.status === 'MAINTENANCE' ? 'rgba(234,179,8,0.9)' : 'rgba(239,68,68,0.9)',
-                      color: 'white', boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
-                    }}>
-                      {resource.status.replace(/_/g, ' ')}
+                      fontSize: '0.72rem', fontWeight: 700, padding: '0.1rem 0.4rem',
+                      borderRadius: '99px', background: '#22c55e', color: 'white'
+                    }}>{exactMatches.filter(r => {
+                      const matchType = filterType === 'ALL' || r.type === filterType;
+                      return matchType && r.capacity >= minCapacity;
+                    }).length}</span>
+                    <span style={{ fontSize: '0.82rem', color: '#166534', marginLeft: '0.25rem' }}>
+                      — Resources matching your query directly
                     </span>
                   </div>
-
-                  {/* Card Body */}
-                  <div style={{ padding: '1.25rem' }}>
-                    <h3 style={{ margin: '0 0 0.6rem', fontSize: '1.05rem', fontWeight: 700, color: '#18181b' }}>{resource.name}</h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', color: '#52525b' }}>
-                        <MonitorPlay size={15} color="#8b5cf6" /> {resource.type.replace(/_/g, ' ')}
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', color: '#52525b' }}>
-                        <Users size={15} color="#3b82f6" /> Capacity: {resource.capacity}
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', color: '#52525b' }}>
-                        <MapPin size={15} color="#f59e0b" /> {resource.location}
-                      </div>
-                    </div>
+                  <div className="grid">
+                    {exactMatches.filter(r => {
+                      const matchType = filterType === 'ALL' || r.type === filterType;
+                      return matchType && r.capacity >= minCapacity;
+                    }).map(resource => (
+                      <ResourceCard key={resource.id} resource={resource} />
+                    ))}
                   </div>
                 </div>
+              )}
+
+              {/* Alternative Matches Section */}
+              {alternativeMatches.length > 0 && (
+                <div style={{ marginBottom: '2rem' }}>
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1rem',
+                    padding: '0.75rem 1rem', background: '#eff6ff', borderRadius: '10px', border: '1px solid #bfdbfe'
+                  }}>
+                    <Shuffle size={18} color="#2563eb" />
+                    <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: '#1e40af' }}>
+                      AI-Suggested Alternatives
+                    </h3>
+                    <span style={{
+                      fontSize: '0.72rem', fontWeight: 700, padding: '0.1rem 0.4rem',
+                      borderRadius: '99px', background: '#3b82f6', color: 'white'
+                    }}>{alternativeMatches.filter(r => {
+                      const matchType = filterType === 'ALL' || r.type === filterType;
+                      return matchType && r.capacity >= minCapacity;
+                    }).length}</span>
+                    <span style={{ fontSize: '0.82rem', color: '#1e40af', marginLeft: '0.25rem' }}>
+                      — Semantically similar resources found by AI
+                    </span>
+                  </div>
+                  <div className="grid">
+                    {alternativeMatches.filter(r => {
+                      const matchType = filterType === 'ALL' || r.type === filterType;
+                      return matchType && r.capacity >= minCapacity;
+                    }).map(resource => (
+                      <ResourceCard key={resource.id} resource={resource} />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* REGULAR GRID (no search or map view) */}
+          {(!hasSearched && viewMode === 'grid') && (
+            <div className="grid">
+              {filteredResources.map(resource => (
+                <ResourceCard key={resource.id} resource={resource} />
               ))}
             </div>
           )}
@@ -353,7 +505,6 @@ export default function UserDashboard() {
             position: 'relative', overflow: 'hidden',
             boxShadow: '0 30px 60px rgba(0,0,0,0.25)', animation: 'fadeIn 0.3s'
           }}>
-            {/* Close button */}
             <button onClick={() => setSelectedResource(null)} style={{
               position: 'absolute', top: '1rem', right: '1rem',
               background: 'rgba(0,0,0,0.4)', border: 'none', cursor: 'pointer',
@@ -362,23 +513,19 @@ export default function UserDashboard() {
               zIndex: 10, color: 'white', backdropFilter: 'blur(4px)'
             }}><X size={16} /></button>
             
-            {/* Modal Header Image */}
             <div style={{ height: '220px', width: '100%', position: 'relative' }}>
               <img 
                  src={selectedResource.imageUrl || 'https://images.unsplash.com/photo-1598620617377-3bfb505b4384?auto=format&fit=crop&q=80&w=800'} 
-                 alt={selectedResource.name} 
-                 referrerPolicy="no-referrer"
+                 alt={selectedResource.name} referrerPolicy="no-referrer"
                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                  onError={(e) => { if (!e.target.dataset.fallback) { e.target.dataset.fallback = '1'; e.target.src = 'https://images.unsplash.com/photo-1598620617377-3bfb505b4384?auto=format&fit=crop&q=80&w=800'; } }}
               />
-              {/* Gradient overlay */}
               <div style={{
                 position: 'absolute', bottom: 0, left: 0, right: 0, height: '80px',
                 background: 'linear-gradient(transparent, rgba(0,0,0,0.5))'
               }} />
             </div>
 
-            {/* Modal Body */}
             <div style={{ padding: '1.75rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
                 <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, color: '#18181b' }}>{selectedResource.name}</h2>
@@ -393,10 +540,8 @@ export default function UserDashboard() {
                 </span>
               </div>
               
-              {/* Details grid */}
               <div style={{
-                marginTop: '1.25rem', display: 'grid', gridTemplateColumns: '1fr 1fr',
-                gap: '0.75rem'
+                marginTop: '1.25rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem'
               }}>
                 <div style={{ background: '#f8fafc', padding: '0.75rem', borderRadius: '10px' }}>
                   <div style={{ fontSize: '0.72rem', color: '#71717a', fontWeight: 600, textTransform: 'uppercase', marginBottom: '0.25rem' }}>Type</div>
@@ -470,7 +615,6 @@ export default function UserDashboard() {
         </div>
       )}
 
-      {/* Inline animation */}
       <style>{`
         @keyframes fadeIn {
           from { opacity: 0; transform: scale(0.95); }

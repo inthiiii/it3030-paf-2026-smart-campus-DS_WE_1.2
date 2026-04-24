@@ -358,9 +358,6 @@ export default function AdminHome() {
             <div style={{ background: '#fef3c7', color: '#92400e', padding: '0.3rem 0.75rem', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 700 }}>
               {inProgressTickets.length} In Progress
             </div>
-            <button onClick={() => navigate('/all-tickets')} className="btn" style={{ margin: 0, padding: '0.3rem 0.75rem', fontSize: '0.8rem', background: '#f4f4f5', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-              Manage All <ArrowRight size={14} />
-            </button>
           </div>
         </div>
 

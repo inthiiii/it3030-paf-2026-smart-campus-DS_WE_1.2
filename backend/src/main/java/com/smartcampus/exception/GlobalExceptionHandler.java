@@ -18,7 +18,7 @@ public class GlobalExceptionHandler {
         errorResponse.put("timestamp", LocalDateTime.now());
         errorResponse.put("status", HttpStatus.NOT_FOUND.value());
         errorResponse.put("error", "Resource Not Found");
-        errorResponse.put("message", ex.getMessage()); // Grabs the message from your Service layer
+        errorResponse.put("message", ex.getMessage()); 
         
         return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
     }
