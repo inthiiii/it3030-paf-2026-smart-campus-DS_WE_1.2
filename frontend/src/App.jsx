@@ -1,17 +1,13 @@
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate, Navigate, useLocation } from 'react-router-dom'
 import UserDashboard from './pages/UserDashboard'
-import UserHome from './pages/UserHome'
 import AdminDashboard from './pages/AdminDashboard'
-import AdminHome from './pages/AdminHome'
 import BookingDashboard from './pages/BookingDashboard'
 import LoginPage from './pages/LoginPage'
 import ReportTicketPage from './pages/tickets/ReportTicketPage'
 import MyTicketsPage from './pages/tickets/MyTicketsPage'
 import AdminTicketsPage from './pages/tickets/AdminTicketsPage'
 import NotificationBell from './components/NotificationBell'
-import LandingPage from './pages/LandingPage'
-import UserProfile from './pages/UserProfile'
-import { LogOut, AlertTriangle, ClipboardList, Settings, LayoutDashboard, CalendarCheck, Shield, Search } from 'lucide-react'
+import { LogOut, LayoutDashboard, CalendarCheck, Shield, Search } from 'lucide-react'
 import './index.css'
 
 // Protects routes that require login
@@ -48,7 +44,7 @@ const HomeRoute = () => {
   const role = localStorage.getItem('user_role');
   if (token && role === 'ADMIN') return <Navigate to="/admin" />;
   if (token) return <Navigate to="/dashboard" />;
-  return <LandingPage />;
+  return <Navigate to="/login" />;
 };
 
 // Navigation Component
@@ -190,7 +186,7 @@ function App() {
         <Route path="/all-tickets" element={<StaffRoute><AdminTicketsPage /></StaffRoute>} />
 
         {/* User Dashboard Home */}
-        <Route path="/dashboard" element={<ProtectedRoute><UserHome /></ProtectedRoute>} />
+        <Route path="/dashboard" element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
 
         {/* Public resource browser */}
         <Route path="/resources" element={<UserDashboard />} />
@@ -198,11 +194,8 @@ function App() {
         {/* Bookings */}
         <Route path="/bookings" element={<ProtectedRoute><BookingDashboard /></ProtectedRoute>} />
 
-        {/* User Profile */}
-        <Route path="/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
-
         {/* Admin Home */}
-        <Route path="/admin" element={<AdminRoute><AdminHome /></AdminRoute>} />
+        <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
 
         {/* Admin Manage */}
         <Route path="/admin/manage" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
