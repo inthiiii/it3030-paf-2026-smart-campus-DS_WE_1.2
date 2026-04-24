@@ -67,15 +67,11 @@ public class AuthController {
                     newUser.setName(name);
                     newUser.setPictureUrl(pictureUrl);
                     
-<<<<<<< HEAD
                     // Master Admin Check
                     if (adminEmail.equals(email)) {
-=======
-                    if ("ihthishamirshad781@gmail.com".equals(email)) {
->>>>>>> main
                         newUser.setRole(User.Role.ADMIN);
                     } else {
-                        newUser.setRole(User.Role.USER); 
+                        newUser.setRole(User.Role.USER);
                     }
                     
                     User savedUser = userRepository.save(newUser);

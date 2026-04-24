@@ -384,8 +384,6 @@ def evaluate_delivery_time(request: NotificationRequest):
     }
 
 # --- END MODULE 4 ---
-<<<<<<< HEAD
-=======
 
 # --- MODULE A: Predictive Maintenance AI ---
 
@@ -426,4 +424,4 @@ def predict_asset_health(request: AssetHealthRequest):
     }
     
 # --- END MODULE A ---
->>>>>>> main
+
