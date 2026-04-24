@@ -23,7 +23,7 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(secret.getBytes());
     }
 
-    // 1. Creates the Token (We already had this)
+    // 1. Creates the Token
     public String generateToken(String email, String role) {
         return Jwts.builder()
                 .setSubject(email)
@@ -34,7 +34,7 @@ public class JwtUtil {
                 .compact();
     }
 
-    // 2. NEW: Reads the data inside the Token
+    // 2. Reads the data inside the Token
     public Claims extractClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(getSigningKey())
@@ -43,7 +43,7 @@ public class JwtUtil {
                 .getBody();
     }
 
-    // 3. NEW: Verifies the Token isn't fake or expired
+    // 3. Verifies the Token isn't fake or expired
     public boolean validateToken(String token) {
         try {
             Jwts.parserBuilder().setSigningKey(getSigningKey()).build().parseClaimsJws(token);

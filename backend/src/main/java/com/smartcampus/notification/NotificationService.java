@@ -26,7 +26,7 @@ public class NotificationService {
     @Autowired
     private RestTemplate restTemplate; // NEW: To talk to Python!
 
-    // UPGRADED MASTER METHOD
+    // Main method called by other services to send a notification
     public void sendNotification(String userEmail, String title, String message, Notification.NotificationType type, boolean isUrgent) {
         
         User user = userRepository.findByEmail(userEmail).orElse(null);
@@ -44,7 +44,7 @@ public class NotificationService {
                 "hour_of_day", hourOfDay,
                 "is_urgent", isUrgent
             );
-
+            // Call the Python AI service which decides whether to SEND_NOW or HOLD_FOR_DIGEST
             Map response = restTemplate.postForObject("http://localhost:8000/api/notifications/smart-delivery", payload, Map.class);
             String action = (String) response.get("action");
 
@@ -72,6 +72,7 @@ public class NotificationService {
         return notificationRepository.save(notification);
     }
 
+    // fetch the user's notifications, sorted by most recent first
     public List<Notification> getUserNotifications(String email) {
         return notificationRepository.findByRecipientEmailOrderByCreatedAtDesc(email);
     }

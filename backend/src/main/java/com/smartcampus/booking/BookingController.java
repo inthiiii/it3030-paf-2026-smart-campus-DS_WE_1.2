@@ -17,7 +17,7 @@ public class BookingController {
     private BookingService bookingService;
 
     @Autowired
-    private BookingRepository bookingRepository; // Injected to save the Check-In status
+    private BookingRepository bookingRepository; 
 
     // ==========================================
     //          USER ENDPOINTS

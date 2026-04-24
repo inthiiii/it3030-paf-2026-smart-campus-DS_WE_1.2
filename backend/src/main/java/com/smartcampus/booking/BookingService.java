@@ -112,12 +112,12 @@ public class BookingService {
         return savedBooking;
     }
 
-    // NEW ADMIN METHOD: Get all bookings
+    // ADMIN METHOD: Get all bookings
     public List<Booking> getAllBookings() {
         return bookingRepository.findAllByOrderByStartTimeDesc();
     }
 
-    // NEW ADMIN METHOD: Approve or Reject
+    // ADMIN METHOD: Approve or Reject
     public Booking updateBookingStatus(String bookingId, Booking.BookingStatus newStatus, String adminEmail) {
         Booking booking = bookingRepository.findById(bookingId)
             .orElseThrow(() -> new RuntimeException("Booking not found"));

@@ -43,7 +43,7 @@ public class UserController {
         }).orElseThrow(() -> new RuntimeException("User not found with id: " + id));
     }
 
-    // NEW: Admin Suspends/Activates a User
+    // Admin Suspends/Activates a User
     @PutMapping("/{id}/status")
     public ResponseEntity<User> updateUserStatus(@PathVariable String id, @RequestBody Map<String, String> payload) {
         String newStatus = payload.get("status");
@@ -64,7 +64,7 @@ public class UserController {
 
     // --- USER ENDPOINTS ---
 
-    // NEW: Get current user profile
+    // Get current user profile
     @GetMapping("/me")
     public ResponseEntity<User> getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -73,7 +73,7 @@ public class UserController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // NEW: User updates their own profile
+    // User updates their own profile
     @PutMapping("/me")
     public ResponseEntity<User> updateProfile(@RequestBody Map<String, Object> payload) {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();

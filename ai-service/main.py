@@ -352,7 +352,7 @@ def predict_no_show(request: PredictionRequest):
     
 # --- END MODULE B ---
     
-# --- MODULE 4: Smart Notification Delivery AI ---
+# --- MODULE D: Smart Notification Delivery AI ---
 
 class NotificationRequest(BaseModel):
     user_email: str
@@ -383,7 +383,7 @@ def evaluate_delivery_time(request: NotificationRequest):
         "reason": "Active user hours detected."
     }
 
-# --- END MODULE 4 ---
+# --- END MODULE D ---
 
 # --- MODULE A: Predictive Maintenance AI ---
 
