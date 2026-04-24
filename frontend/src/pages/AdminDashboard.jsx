@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
-import { Users, Server, ShieldAlert, Activity, CalendarCheck } from 'lucide-react'
+import { Users, Server, ShieldAlert, Activity, CalendarCheck, Wrench, ArrowRight, Clock, CheckCircle, AlertTriangle, XCircle } from 'lucide-react'
+import { getAllTickets } from '../services/ticketService'
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('resources') // 'resources' or 'users'
@@ -19,12 +20,14 @@ export default function AdminDashboard() {
   const [logs, setLogs] = useState([])
 
   const [allBookings, setAllBookings] = useState([])
+  const [tickets, setTickets] = useState([])
 
   useEffect(() => {
     fetchResources()
     fetchUsers()
     fetchLogs()
     fetchAllBookings()
+    fetchTickets()
   }, [])
 
   const fetchResources = async () => {
@@ -52,6 +55,15 @@ export default function AdminDashboard() {
       setAllBookings(response.data)
     } catch (error) {
       console.error("Error fetching bookings:", error)
+    }
+  }
+
+  const fetchTickets = async () => {
+    try {
+      const data = await getAllTickets()
+      setTickets(data)
+    } catch (error) {
+      console.error('Error fetching tickets:', error)
     }
   }
 
@@ -156,6 +168,13 @@ export default function AdminDashboard() {
             style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0, background: activeTab !== 'bookings' ? '#e4e4e7' : '', color: activeTab !== 'bookings' ? '#3f3f46' : '' }}
           >
             <CalendarCheck size={18} /> Booking Requests
+          </button>
+          <button
+            className={`btn ${activeTab === 'tickets' ? 'btn-primary' : ''}`}
+            onClick={() => setActiveTab('tickets')}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0, background: activeTab !== 'tickets' ? '#e4e4e7' : '', color: activeTab !== 'tickets' ? '#3f3f46' : '' }}
+          >
+            <Wrench size={18} /> Tickets
           </button>
         </div>
       </div>
@@ -413,6 +432,105 @@ export default function AdminDashboard() {
           </table>
         </div>
       )}
+
+      {/* --- TICKETS TAB --- */}
+      {activeTab === 'tickets' && (() => {
+        const openT = tickets.filter(t => t.status === 'OPEN')
+        const inProgT = tickets.filter(t => t.status === 'IN_PROGRESS')
+        const resolvedT = tickets.filter(t => t.status === 'RESOLVED')
+        const closedT = tickets.filter(t => t.status === 'CLOSED')
+        const stages = [
+          { label: 'Open', items: openT, icon: AlertTriangle, color: '#3b82f6', bg: '#eff6ff', border: '#bfdbfe' },
+          { label: 'In Progress', items: inProgT, icon: Clock, color: '#f59e0b', bg: '#fffbeb', border: '#fde68a' },
+          { label: 'Resolved', items: resolvedT, icon: CheckCircle, color: '#22c55e', bg: '#f0fdf4', border: '#bbf7d0' },
+          { label: 'Closed', items: closedT, icon: XCircle, color: '#71717a', bg: '#f4f4f5', border: '#e4e4e7' },
+        ]
+        return (
+          <>
+            {/* Summary Stats */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
+              {stages.map(({ label, items, icon: Icon, color, bg }) => (
+                <div key={label} style={{
+                  background: 'white', borderRadius: '12px', padding: '1.25rem',
+                  border: '1px solid #e4e4e7', textAlign: 'center'
+                }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 0.5rem' }}>
+                    <Icon size={20} color={color} />
+                  </div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#18181b' }}>{items.length}</div>
+                  <div style={{ fontSize: '0.82rem', color: '#71717a', fontWeight: 600 }}>{label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Workflow Pipeline */}
+            <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #e4e4e7', padding: '1.5rem' }}>
+              <h3 style={{ margin: '0 0 1.25rem', fontSize: '1.1rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Wrench size={18} color="#6366f1" /> Ticket Workflow
+              </h3>
+
+              {/* Pipeline Columns */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.75rem' }}>
+                {stages.map(({ label, items, color, bg, border }, stageIdx) => (
+                  <div key={label}>
+                    {/* Column Header */}
+                    <div style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '0.6rem 0.75rem', borderRadius: '8px', marginBottom: '0.75rem',
+                      background: bg, border: `1px solid ${border}`
+                    }}>
+                      <span style={{ fontSize: '0.82rem', fontWeight: 700, color }}>{label}</span>
+                      <span style={{
+                        fontSize: '0.72rem', fontWeight: 700, padding: '0.1rem 0.4rem',
+                        borderRadius: '99px', background: color, color: 'white'
+                      }}>{items.length}</span>
+                    </div>
+
+                    {/* Ticket Cards */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', minHeight: '100px' }}>
+                      {items.slice(0, 6).map(ticket => (
+                        <div key={ticket.id} style={{
+                          background: '#fafafa', borderRadius: '8px', padding: '0.65rem 0.75rem',
+                          border: '1px solid #e4e4e7', fontSize: '0.82rem',
+                          transition: 'box-shadow 0.2s'
+                        }}
+                          onMouseEnter={e => e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.06)'}
+                          onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}
+                        >
+                          <div style={{ fontWeight: 700, color: '#18181b', marginBottom: '0.2rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {ticket.title}
+                          </div>
+                          <div style={{ color: '#a1a1aa', fontSize: '0.72rem' }}>
+                            {ticket.reporterName} · {ticket.location}
+                          </div>
+                          {ticket.mlPriorityLevel && (
+                            <span style={{
+                              fontSize: '0.68rem', fontWeight: 700, marginTop: '0.25rem', display: 'inline-block',
+                              padding: '0.1rem 0.4rem', borderRadius: '4px',
+                              background: ticket.mlPriorityLevel <= 2 ? '#fef2f2' : '#f4f4f5',
+                              color: ticket.mlPriorityLevel <= 2 ? '#ef4444' : '#71717a'
+                            }}>P{ticket.mlPriorityLevel}</span>
+                          )}
+                        </div>
+                      ))}
+                      {items.length > 6 && (
+                        <div style={{ fontSize: '0.78rem', color: '#a1a1aa', textAlign: 'center', padding: '0.25rem' }}>
+                          +{items.length - 6} more
+                        </div>
+                      )}
+                      {items.length === 0 && (
+                        <div style={{ fontSize: '0.78rem', color: '#d4d4d8', textAlign: 'center', padding: '1.5rem 0.5rem' }}>
+                          No tickets
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )
+      })()}
     </div>
   )
 }

@@ -102,4 +102,17 @@ public class TicketController {
         String role = getRoleFromHeader(authHeader);
         return ResponseEntity.ok(ticketService.addComment(id, request, email, role));
     }
+
+    // DELETE /api/tickets/{id} — Delete a ticket (ADMIN or TECHNICIAN)
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteTicket(
+            @PathVariable String id,
+            @RequestHeader("Authorization") String authHeader) {
+        String role = getRoleFromHeader(authHeader);
+        if (!role.equals("ADMIN") && !role.equals("TECHNICIAN")) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        ticketService.deleteTicket(id);
+        return ResponseEntity.noContent().build();
+    }
 }

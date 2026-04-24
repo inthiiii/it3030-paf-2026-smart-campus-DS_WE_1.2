@@ -26,6 +26,8 @@ export default function LoginPage() {
       // 4. Route them based on their role
       if (role === 'ADMIN') {
         navigate('/admin');
+      } else if (role === 'TECHNICIAN') {
+        navigate('/tech');
       } else {
         navigate('/dashboard');
       }

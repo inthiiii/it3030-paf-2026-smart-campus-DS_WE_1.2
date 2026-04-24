@@ -52,3 +52,8 @@ export async function addComment(ticketId, body) {
   const res = await axios.post(`${API}/${ticketId}/comments`, { body }, { headers: getAuthHeader() });
   return res.data;
 }
+
+// Delete a ticket (admin only)
+export async function deleteTicket(id) {
+  await axios.delete(`${API}/${id}`, { headers: getAuthHeader() });
+}

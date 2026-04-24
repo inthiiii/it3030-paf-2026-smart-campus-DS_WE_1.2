@@ -242,6 +242,23 @@ public class TicketService {
         return saved;
     }
 
+    // --- DELETE (admin only) ---
+    public void deleteTicket(String id) {
+        Ticket ticket = ticketRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ticket not found"));
+
+        ticketRepository.deleteById(id);
+
+        // Notify the reporter that their ticket was deleted
+        notificationService.sendNotification(
+            ticket.getReporterEmail(),
+            "🗑️ Ticket Deleted",
+            "Your ticket \"" + ticket.getTitle() + "\" has been removed by an administrator.",
+            Notification.NotificationType.WARNING,
+            false
+        );
+    }
+
     // ========== HELPERS ==========
 
     /** Truncate a string to maxLen characters, adding "…" if cut */

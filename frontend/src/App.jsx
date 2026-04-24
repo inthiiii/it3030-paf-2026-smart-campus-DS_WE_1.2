@@ -3,6 +3,7 @@ import UserDashboard from './pages/UserDashboard'
 import UserHome from './pages/UserHome'
 import AdminDashboard from './pages/AdminDashboard'
 import AdminHome from './pages/AdminHome'
+import TechnicianHome from './pages/TechnicianHome'
 import BookingDashboard from './pages/BookingDashboard'
 import LoginPage from './pages/LoginPage'
 import LandingPage from './pages/LandingPage'
@@ -12,7 +13,7 @@ import MyTicketsPage from './pages/tickets/MyTicketsPage'
 import AdminTicketsPage from './pages/tickets/AdminTicketsPage'
 import TicketsPage from './pages/TicketsPage'
 import NotificationBell from './components/NotificationBell'
-import { LogOut, LayoutDashboard, CalendarCheck, Shield, Search, AlertTriangle, ClipboardList, Wrench } from 'lucide-react'
+import { LogOut, LayoutDashboard, CalendarCheck, Shield, Search, ClipboardList, Wrench } from 'lucide-react'
 import './index.css'
 
 // Protects routes that require login
@@ -36,6 +37,13 @@ const StaffRoute = ({ children }) => {
   return children;
 };
 
+// Protects routes for TECHNICIAN only
+const TechRoute = ({ children }) => {
+  const role = localStorage.getItem('user_role');
+  if (role !== 'TECHNICIAN') return <Navigate to="/" />;
+  return children;
+};
+
 // Protects any route that requires a logged-in user
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem('jwt_token');
@@ -48,6 +56,7 @@ const HomeRoute = () => {
   const token = localStorage.getItem('jwt_token');
   const role = localStorage.getItem('user_role');
   if (token && role === 'ADMIN') return <Navigate to="/admin" />;
+  if (token && role === 'TECHNICIAN') return <Navigate to="/tech" />;
   if (token) return <Navigate to="/dashboard" />;
   return <LandingPage />;
 };
@@ -87,6 +96,9 @@ const NavBar = () => {
     );
   };
 
+  // Determine home path based on role
+  const homePath = role === 'ADMIN' ? '/admin' : role === 'TECHNICIAN' ? '/tech' : '/dashboard';
+
   return (
     <nav style={{
       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -101,7 +113,7 @@ const NavBar = () => {
       {/* LEFT — Brand + Links */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
         <div
-          onClick={() => navigate(role === 'ADMIN' ? '/admin' : '/dashboard')}
+          onClick={() => navigate(homePath)}
           style={{
             fontSize: '1.05rem', fontWeight: 800, color: '#18181b',
             marginRight: '1.25rem', cursor: 'pointer', display: 'flex',
@@ -119,13 +131,24 @@ const NavBar = () => {
 
         <div style={{ width: '1px', height: '24px', background: '#e4e4e7', marginRight: '0.5rem' }} />
 
-        {role === 'ADMIN' ? (
+        {/* ADMIN NAV */}
+        {role === 'ADMIN' && (
           <>
             <NavLink to="/admin" icon={LayoutDashboard}>Admin Home</NavLink>
             <NavLink to="/admin/manage" icon={Shield}>Manage</NavLink>
-            <NavLink to="/all-tickets" icon={Wrench}>All Tickets</NavLink>
           </>
-        ) : (
+        )}
+
+        {/* TECHNICIAN NAV */}
+        {role === 'TECHNICIAN' && (
+          <>
+            <NavLink to="/tech" icon={LayoutDashboard}>Home</NavLink>
+            <NavLink to="/manage-tickets" icon={Wrench}>Manage Tickets</NavLink>
+          </>
+        )}
+
+        {/* USER NAV */}
+        {role !== 'ADMIN' && role !== 'TECHNICIAN' && (
           <>
             {token && <NavLink to="/dashboard" icon={LayoutDashboard}>Home</NavLink>}
             <NavLink to="/resources" icon={Search}>Browse Resources</NavLink>
@@ -183,11 +206,13 @@ function App() {
         {/* Login */}
         <Route path="/login" element={<LoginPage />} />
 
-        {/* Tickets — unified page with tabs */}
+        {/* Tickets — unified page with tabs (for users) */}
         <Route path="/tickets" element={<PrivateRoute><TicketsPage /></PrivateRoute>} />
         <Route path="/report-issue" element={<PrivateRoute><ReportTicketPage /></PrivateRoute>} />
         <Route path="/my-tickets" element={<PrivateRoute><MyTicketsPage /></PrivateRoute>} />
-        <Route path="/all-tickets" element={<StaffRoute><AdminTicketsPage /></StaffRoute>} />
+
+        {/* Manage Tickets — for technicians */}
+        <Route path="/manage-tickets" element={<StaffRoute><AdminTicketsPage /></StaffRoute>} />
 
         {/* User Home & Dashboard */}
         <Route path="/dashboard" element={<ProtectedRoute><UserHome /></ProtectedRoute>} />
@@ -198,6 +223,9 @@ function App() {
 
         {/* User Profile */}
         <Route path="/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
+
+        {/* Technician Home */}
+        <Route path="/tech" element={<TechRoute><TechnicianHome /></TechRoute>} />
 
         {/* Admin */}
         <Route path="/admin" element={<AdminRoute><AdminHome /></AdminRoute>} />
