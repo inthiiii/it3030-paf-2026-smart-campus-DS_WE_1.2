@@ -50,7 +50,6 @@ public class AuthController {
         String googleToken = payload.get("token");
 
         try {
-            // 1. Verify the token with Google
             GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new GsonFactory())
                     .setAudience(Collections.singletonList(googleClientId))
                     .build();
@@ -62,15 +61,18 @@ public class AuthController {
                 String name = (String) googlePayload.get("name");
                 String pictureUrl = (String) googlePayload.get("picture");
 
-                // 2. Find user in DB, or create a new one!
                 User user = userRepository.findByEmail(email).orElseGet(() -> {
                     User newUser = new User();
                     newUser.setEmail(email);
                     newUser.setName(name);
                     newUser.setPictureUrl(pictureUrl);
                     
+<<<<<<< HEAD
                     // Master Admin Check
                     if (adminEmail.equals(email)) {
+=======
+                    if ("ihthishamirshad781@gmail.com".equals(email)) {
+>>>>>>> main
                         newUser.setRole(User.Role.ADMIN);
                     } else {
                         newUser.setRole(User.Role.USER); 
@@ -78,7 +80,6 @@ public class AuthController {
                     
                     User savedUser = userRepository.save(newUser);
                     
-                    // Trigger the First-Time Welcome Notification!
                     notificationService.sendNotification(
                         savedUser.getEmail(), 
                         "Welcome to Smart Campus! 🎉", 
@@ -90,42 +91,40 @@ public class AuthController {
                     return savedUser;
                 });
 
-                // 3. Generate our secure JWT
+                // --- NEW IAM SECURITY CHECK: Block Suspended/Deleted Users ---
+                if (user.getAccountStatus() == User.AccountStatus.SUSPENDED) {
+                    auditService.logAction(email, "FAILED_LOGIN", "Suspended user attempted to log in.");
+                    return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Login Denied: Your account has been suspended by an Administrator.");
+                }
+                if (user.getAccountStatus() == User.AccountStatus.DELETED) {
+                    auditService.logAction(email, "FAILED_LOGIN", "Deleted user attempted to log in.");
+                    return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Login Denied: This account no longer exists.");
+                }
+                // --------------------------------------------------------------
+
                 String jwt = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
 
-                // --------------------------------------------------------
-                // 4. THE ML FEATURE: Suspicious Login Detection
-                // --------------------------------------------------------
                 try {
                     Map<String, String> aiPayload = Map.of(
                         "email", user.getEmail(),
                         "timestamp", java.time.Instant.now().toString()
                     );
                     
-                    // Ping the Python AI Server
                     Map aiResponse = restTemplate.postForObject("http://localhost:8000/api/anomaly/login", aiPayload, Map.class);
-                    
                     boolean isSuspicious = (Boolean) aiResponse.get("is_suspicious");
 
-                    // Log the result into the Audit Trail
                     if (isSuspicious) {
                         auditService.logAction(user.getEmail(), "SUSPICIOUS_LOGIN", "🚨 AI DETECTED ANOMALOUS LOGIN TIME!");
                     } else {
                         auditService.logAction(user.getEmail(), "LOGIN", "Standard user authentication.");
                     }
                 } catch (Exception e) {
-                    // Fallback just in case you forgot to turn the Python server on!
                     auditService.logAction(user.getEmail(), "LOGIN", "User authenticated (AI Check Offline).");
                 }
-                // --------------------------------------------------------
 
-                // 5. Send the user data and token back to React
                 return ResponseEntity.ok(Map.of(
-                        "token", jwt,
-                        "role", user.getRole(),
-                        "name", user.getName(),
-                        "email", user.getEmail(),
-                        "picture", user.getPictureUrl()
+                        "token", jwt, "role", user.getRole(), "name", user.getName(), 
+                        "email", user.getEmail(), "picture", user.getPictureUrl()
                 ));
             } else {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid Google Token");
