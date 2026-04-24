@@ -4,8 +4,9 @@ import axios from 'axios'
 import {
   Shield, Bell, Server, Activity, Users, CalendarCheck,
   ArrowRight, AlertTriangle, CheckCircle, XCircle, Wrench,
-  TrendingUp, UserX, Trash2
+  TrendingUp, UserX, Trash2, ClipboardList
 } from 'lucide-react'
+import { getAllTickets } from '../services/ticketService'
 
 export default function AdminHome() {
   const navigate = useNavigate()
@@ -18,6 +19,7 @@ export default function AdminHome() {
   const [logs, setLogs] = useState([])
   const [users, setUsers] = useState([])
   const [bookings, setBookings] = useState([])
+  const [tickets, setTickets] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -35,6 +37,9 @@ export default function AdminHome() {
       setBookings(bookRes.data)
       setLoading(false)
     })
+
+    // Fetch tickets separately (uses auth header from ticketService)
+    getAllTickets().then(data => setTickets(data)).catch(() => setTickets([]))
   }, [userEmail])
 
   // Derived data
@@ -54,6 +59,12 @@ export default function AdminHome() {
   const latestLogs = logs.slice(0, 5)
   const pendingBookings = bookings.filter(b => b.status === 'PENDING').slice(0, 5)
   const totalPending = bookings.filter(b => b.status === 'PENDING').length
+
+  // Ticket stats
+  const openTickets = tickets.filter(t => t.status === 'OPEN')
+  const inProgressTickets = tickets.filter(t => t.status === 'IN_PROGRESS')
+  const allOpenTickets = [...openTickets, ...inProgressTickets]
+  const recentOpenTickets = allOpenTickets.slice(0, 5)
 
   if (loading) {
     return (
@@ -151,6 +162,20 @@ export default function AdminHome() {
           </div>
           <div style={{ fontSize: '1.75rem', fontWeight: 700, color: totalPending > 0 ? '#3b82f6' : '#18181b' }}>{totalPending}</div>
           <span style={{ fontSize: '0.8rem', color: '#71717a' }}>awaiting approval</span>
+        </div>
+
+        {/* Open Tickets */}
+        <div onClick={() => navigate('/all-tickets')} style={{
+          background: allOpenTickets.length > 0 ? '#fef2f2' : 'white',
+          border: allOpenTickets.length > 0 ? '1px solid #fecaca' : '1px solid #e4e4e7',
+          borderRadius: '12px', padding: '1.25rem', cursor: 'pointer', transition: 'transform 0.2s'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+            <ClipboardList size={18} color={allOpenTickets.length > 0 ? '#ef4444' : '#71717a'} />
+            <span style={{ fontSize: '0.85rem', color: '#71717a', fontWeight: 600 }}>Open Tickets</span>
+          </div>
+          <div style={{ fontSize: '1.75rem', fontWeight: 700, color: allOpenTickets.length > 0 ? '#ef4444' : '#18181b' }}>{allOpenTickets.length}</div>
+          <span style={{ fontSize: '0.8rem', color: '#71717a' }}>need resolution</span>
         </div>
       </div>
 
@@ -318,6 +343,65 @@ export default function AdminHome() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* TICKET OVERVIEW — FULL WIDTH */}
+      <div style={{ background: 'white', borderRadius: '12px', padding: '1.5rem', border: '1px solid #e4e4e7', boxShadow: '0 2px 4px rgba(0,0,0,0.03)', marginTop: '1.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+          <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <ClipboardList size={18} color="#6366f1" /> Maintenance Tickets
+          </h3>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <div style={{ background: '#e0e7ff', color: '#4338ca', padding: '0.3rem 0.75rem', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 700 }}>
+              {openTickets.length} Open
+            </div>
+            <div style={{ background: '#fef3c7', color: '#92400e', padding: '0.3rem 0.75rem', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 700 }}>
+              {inProgressTickets.length} In Progress
+            </div>
+            <button onClick={() => navigate('/all-tickets')} className="btn" style={{ margin: 0, padding: '0.3rem 0.75rem', fontSize: '0.8rem', background: '#f4f4f5', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+              Manage All <ArrowRight size={14} />
+            </button>
+          </div>
+        </div>
+
+        {recentOpenTickets.length === 0 ? (
+          <div style={{ background: '#f0fdf4', padding: '1rem', borderRadius: '8px', textAlign: 'center', color: '#166534', fontSize: '0.9rem' }}>
+            <CheckCircle size={20} style={{ margin: '0 auto 0.5rem' }} />
+            <p style={{ margin: 0 }}>All tickets have been resolved! 🎉</p>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {recentOpenTickets.map(ticket => {
+              const statusColor = { OPEN: '#3b82f6', IN_PROGRESS: '#f59e0b' }[ticket.status] || '#71717a'
+              return (
+                <div key={ticket.id} style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '0.75rem', background: '#f8fafc', borderRadius: '8px',
+                  borderLeft: `3px solid ${statusColor}`
+                }}>
+                  <div>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#18181b' }}>{ticket.title}</div>
+                    <div style={{ fontSize: '0.75rem', color: '#71717a' }}>
+                      {ticket.reporterName} • {ticket.location} • {new Date(ticket.createdAt).toLocaleDateString()}
+                    </div>
+                    {ticket.mlSeverity && (ticket.mlSeverity === 'HIGH' || ticket.mlSeverity === 'CRITICAL') && (
+                      <div style={{ fontSize: '0.7rem', color: '#ef4444', fontWeight: 700, marginTop: '0.15rem' }}>
+                        🤖 AI Severity: {ticket.mlSeverity}
+                      </div>
+                    )}
+                  </div>
+                  <span style={{
+                    background: statusColor, color: 'white',
+                    padding: '0.2rem 0.6rem', borderRadius: '999px',
+                    fontWeight: 700, fontSize: '0.7rem'
+                  }}>
+                    {ticket.status.replace('_', ' ')}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
     </div>
   )

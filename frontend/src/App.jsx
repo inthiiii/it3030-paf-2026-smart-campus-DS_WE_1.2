@@ -6,26 +6,40 @@ import AdminHome from './pages/AdminHome'
 import BookingDashboard from './pages/BookingDashboard'
 import LoginPage from './pages/LoginPage'
 import LandingPage from './pages/LandingPage'
-import NotificationBell from './components/NotificationBell'
 import UserProfile from './pages/UserProfile'
-import { LogOut, LayoutDashboard, CalendarCheck, Shield, Search } from 'lucide-react'
+import ReportTicketPage from './pages/tickets/ReportTicketPage'
+import MyTicketsPage from './pages/tickets/MyTicketsPage'
+import AdminTicketsPage from './pages/tickets/AdminTicketsPage'
+import TicketsPage from './pages/TicketsPage'
+import NotificationBell from './components/NotificationBell'
+import { LogOut, LayoutDashboard, CalendarCheck, Shield, Search, AlertTriangle, ClipboardList, Wrench } from 'lucide-react'
 import './index.css'
 
-// A wrapper to protect the Admin route
-const AdminRoute = ({ children }) => {
-  const role = localStorage.getItem('user_role');
-  if (role !== 'ADMIN') {
-    return <Navigate to="/login" />;
-  }
+// Protects routes that require login
+const PrivateRoute = ({ children }) => {
+  const token = localStorage.getItem('jwt_token');
+  if (!token) return <Navigate to="/login" />;
   return children;
 };
 
-// A wrapper to protect ANY route that requires a logged-in user
+// Protects the Admin route
+const AdminRoute = ({ children }) => {
+  const role = localStorage.getItem('user_role');
+  if (role !== 'ADMIN') return <Navigate to="/login" />;
+  return children;
+};
+
+// Protects routes that require ADMIN or TECHNICIAN
+const StaffRoute = ({ children }) => {
+  const role = localStorage.getItem('user_role');
+  if (role !== 'ADMIN' && role !== 'TECHNICIAN') return <Navigate to="/" />;
+  return children;
+};
+
+// Protects any route that requires a logged-in user
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem('jwt_token');
-  if (!token) {
-    return <Navigate to="/login" />;
-  }
+  if (!token) return <Navigate to="/login" />;
   return children;
 };
 
@@ -86,7 +100,6 @@ const NavBar = () => {
     }}>
       {/* LEFT — Brand + Links */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-        {/* Brand */}
         <div
           onClick={() => navigate(role === 'ADMIN' ? '/admin' : '/dashboard')}
           style={{
@@ -104,20 +117,20 @@ const NavBar = () => {
           <span style={{ fontSize: '0.85rem' }}>Smart Campus</span>
         </div>
 
-        {/* Separator */}
         <div style={{ width: '1px', height: '24px', background: '#e4e4e7', marginRight: '0.5rem' }} />
 
-        {/* Role-based Navigation */}
         {role === 'ADMIN' ? (
           <>
             <NavLink to="/admin" icon={LayoutDashboard}>Admin Home</NavLink>
             <NavLink to="/admin/manage" icon={Shield}>Manage</NavLink>
+            <NavLink to="/all-tickets" icon={Wrench}>All Tickets</NavLink>
           </>
         ) : (
           <>
             {token && <NavLink to="/dashboard" icon={LayoutDashboard}>Home</NavLink>}
             <NavLink to="/resources" icon={Search}>Browse Resources</NavLink>
             {token && <NavLink to="/bookings" icon={CalendarCheck}>My Bookings</NavLink>}
+            {token && <NavLink to="/tickets" icon={ClipboardList}>Tickets</NavLink>}
           </>
         )}
       </div>
@@ -134,8 +147,7 @@ const NavBar = () => {
               <img src={picture} alt="Profile" title="Edit Profile" style={{
                 width: '34px', height: '34px', borderRadius: '50%',
                 border: '2px solid #e4e4e7', cursor: 'pointer',
-                transition: 'border-color 0.2s',
-                objectFit: 'cover'
+                transition: 'border-color 0.2s', objectFit: 'cover'
               }} />
             )}
           </Link>
@@ -171,43 +183,25 @@ function App() {
         {/* Login */}
         <Route path="/login" element={<LoginPage />} />
 
-        {/* User Dashboard Home — for logged-in users */}
-        <Route path="/dashboard" element={
-          <ProtectedRoute>
-            <UserHome />
-          </ProtectedRoute>
-        } />
+        {/* Tickets — unified page with tabs */}
+        <Route path="/tickets" element={<PrivateRoute><TicketsPage /></PrivateRoute>} />
+        <Route path="/report-issue" element={<PrivateRoute><ReportTicketPage /></PrivateRoute>} />
+        <Route path="/my-tickets" element={<PrivateRoute><MyTicketsPage /></PrivateRoute>} />
+        <Route path="/all-tickets" element={<StaffRoute><AdminTicketsPage /></StaffRoute>} />
 
-        {/* Public resource browser */}
+        {/* User Home & Dashboard */}
+        <Route path="/dashboard" element={<ProtectedRoute><UserHome /></ProtectedRoute>} />
         <Route path="/resources" element={<UserDashboard />} />
 
         {/* Bookings */}
-        <Route path="/bookings" element={
-          <ProtectedRoute>
-            <BookingDashboard />
-          </ProtectedRoute>
-        } />
+        <Route path="/bookings" element={<ProtectedRoute><BookingDashboard /></ProtectedRoute>} />
 
         {/* User Profile */}
-        <Route path="/profile" element={
-          <ProtectedRoute>
-            <UserProfile />
-          </ProtectedRoute>
-        } />
+        <Route path="/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
 
-        {/* Admin Home */}
-        <Route path="/admin" element={
-          <AdminRoute>
-            <AdminHome />
-          </AdminRoute>
-        } />
-
-        {/* Admin Manage */}
-        <Route path="/admin/manage" element={
-          <AdminRoute>
-            <AdminDashboard />
-          </AdminRoute>
-        } />
+        {/* Admin */}
+        <Route path="/admin" element={<AdminRoute><AdminHome /></AdminRoute>} />
+        <Route path="/admin/manage" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
       </Routes>
     </Router>
   )
