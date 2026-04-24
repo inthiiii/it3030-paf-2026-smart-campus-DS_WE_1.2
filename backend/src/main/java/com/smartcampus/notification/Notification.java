@@ -11,7 +11,7 @@ public class Notification {
     @Id
     private String id;
     
-    private String recipientEmail; // Who gets this message?
+    private String recipientEmail;
     private String title;
     private String message;
     private NotificationType type; // SUCCESS, WARNING, INFO, ERROR

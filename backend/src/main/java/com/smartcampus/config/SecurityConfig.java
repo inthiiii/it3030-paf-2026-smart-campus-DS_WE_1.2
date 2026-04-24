@@ -21,7 +21,7 @@ import java.util.List;
 public class SecurityConfig {
 
     @Autowired
-    private JwtAuthenticationFilter jwtAuthenticationFilter; // <-- 2. Autowire it here
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -34,7 +34,6 @@ public class SecurityConfig {
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
-            // 3. THE MAGIC LINE: Add our custom filter BEFORE Spring checks for a password!
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

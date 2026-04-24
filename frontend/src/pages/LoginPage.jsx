@@ -29,7 +29,7 @@ export default function LoginPage() {
       } else {
         navigate('/dashboard');
       }
-    } catch (error) {
+    } catch (error) { // 5. Handle errors (Validation)
       console.error("Login failed:", error);
       alert("Authentication failed. Please check your backend terminal for errors.");
     }

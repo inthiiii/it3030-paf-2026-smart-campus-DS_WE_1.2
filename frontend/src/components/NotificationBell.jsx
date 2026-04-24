@@ -35,7 +35,6 @@ export default function NotificationBell() {
           setNotifications((prev) => [newNotif, ...prev]);
           setUnreadCount((prev) => prev + 1);
 
-          // OPTIONAL: You could trigger a browser toast or sound effect right here!
         });
       },
     });
@@ -58,7 +57,7 @@ export default function NotificationBell() {
 
   const fetchNotifications = async () => {
     try {
-      // Create a quick backend endpoint to fetch notifications (we'll add this in Java next if missing)
+      // Create a quick backend endpoint to fetch notifications
       const res = await axios.get(`http://localhost:8080/api/notifications/${userEmail}`);
       setNotifications(res.data);
       setUnreadCount(res.data.filter(n => !n.read).length);

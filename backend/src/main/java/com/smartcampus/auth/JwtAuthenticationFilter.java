@@ -30,7 +30,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         // 2. If it has a Bearer token, grab it!
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            String token = authHeader.substring(7); // Remove "Bearer " prefix
+            String token = authHeader.substring(7); // 
 
             // 3. If the token is real, extract the user's role and email
             if (jwtUtil.validateToken(token)) {
