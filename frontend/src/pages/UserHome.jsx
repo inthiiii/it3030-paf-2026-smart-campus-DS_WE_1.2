@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import {
   Bell, CalendarCheck, ArrowRight, QrCode, CheckCircle,
-  AlertTriangle, Sparkles, Clock, MapPin, Users as UsersIcon, MonitorPlay, BookOpen
+  AlertTriangle, Sparkles, Clock, MapPin, Users as UsersIcon, MonitorPlay, BookOpen,
+  ClipboardList, MessageSquare
 } from 'lucide-react'
+import { getMyTickets } from '../services/ticketService'
 
 export default function UserHome() {
   const navigate = useNavigate()
@@ -15,6 +17,7 @@ export default function UserHome() {
   const [unreadCount, setUnreadCount] = useState(0)
   const [bookings, setBookings] = useState([])
   const [resources, setResources] = useState([])
+  const [tickets, setTickets] = useState([])
   const [loading, setLoading] = useState(true)
   const [featuredResource, setFeaturedResource] = useState(null)
 
@@ -37,12 +40,17 @@ export default function UserHome() {
 
       setLoading(false)
     })
+
+    // Fetch tickets separately (uses auth header from ticketService)
+    getMyTickets().then(data => setTickets(data)).catch(() => setTickets([]))
   }, [userEmail])
 
   // Derived
   const confirmedBookings = bookings.filter(b => b.status === 'CONFIRMED' && !b.checkedIn)
   const upcomingBookings = bookings.filter(b => b.status === 'CONFIRMED' || b.status === 'PENDING').slice(0, 3)
   const totalBookings = bookings.length
+  const openTickets = tickets.filter(t => t.status === 'OPEN' || t.status === 'IN_PROGRESS')
+  const recentTickets = tickets.slice(0, 3)
 
   // Check-in eligible bookings
   const now = new Date()
@@ -165,6 +173,20 @@ export default function UserHome() {
           </div>
           <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#18181b' }}>{resources.filter(r => r.status === 'ACTIVE').length}</div>
           <span style={{ fontSize: '0.8rem', color: '#71717a' }}>available now</span>
+        </div>
+
+        {/* Open Tickets */}
+        <div onClick={() => navigate('/my-tickets')} style={{
+          background: openTickets.length > 0 ? '#fef2f2' : 'white',
+          border: openTickets.length > 0 ? '1px solid #fecaca' : '1px solid #e4e4e7',
+          borderRadius: '12px', padding: '1.25rem', cursor: 'pointer'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+            <ClipboardList size={18} color={openTickets.length > 0 ? '#ef4444' : '#71717a'} />
+            <span style={{ fontSize: '0.85rem', color: '#71717a', fontWeight: 600 }}>Open Tickets</span>
+          </div>
+          <div style={{ fontSize: '1.75rem', fontWeight: 700, color: openTickets.length > 0 ? '#ef4444' : '#18181b' }}>{openTickets.length}</div>
+          <span style={{ fontSize: '0.8rem', color: '#71717a' }}>need attention</span>
         </div>
       </div>
 
@@ -371,6 +393,82 @@ export default function UserHome() {
               </div>
             </div>
           )}
+        </div>
+      </div>
+
+      {/* TICKET SECTION — FULL WIDTH */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginTop: '1.5rem' }}>
+
+        {/* MY RECENT TICKETS */}
+        <div style={{ background: 'white', borderRadius: '12px', padding: '1.5rem', border: '1px solid #e4e4e7', boxShadow: '0 2px 4px rgba(0,0,0,0.03)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+            <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <ClipboardList size={18} color="#6366f1" /> My Tickets
+            </h3>
+            <button onClick={() => navigate('/my-tickets')} className="btn" style={{ margin: 0, padding: '0.3rem 0.75rem', fontSize: '0.8rem', background: '#f4f4f5', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+              View All <ArrowRight size={14} />
+            </button>
+          </div>
+
+          {recentTickets.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '1.5rem', color: '#71717a' }}>
+              <MessageSquare size={32} style={{ opacity: 0.3, margin: '0 auto 0.5rem' }} />
+              <p style={{ margin: 0 }}>No tickets submitted yet.</p>
+              <button onClick={() => navigate('/report-issue')} className="btn btn-primary" style={{ marginTop: '1rem', fontSize: '0.85rem' }}>
+                Report an Issue
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {recentTickets.map(t => {
+                const statusColor = { OPEN: '#3b82f6', IN_PROGRESS: '#f59e0b', RESOLVED: '#10b981', CLOSED: '#6b7280' }[t.status] || '#71717a'
+                return (
+                  <div key={t.id} style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    padding: '0.75rem', background: '#f8fafc', borderRadius: '8px',
+                    borderLeft: `3px solid ${statusColor}`
+                  }}>
+                    <div>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#18181b' }}>{t.title}</div>
+                      <div style={{ fontSize: '0.75rem', color: '#71717a' }}>
+                        {new Date(t.createdAt).toLocaleDateString()} • {t.location}
+                      </div>
+                    </div>
+                    <span style={{
+                      background: statusColor, color: 'white',
+                      padding: '0.2rem 0.6rem', borderRadius: '999px',
+                      fontWeight: 700, fontSize: '0.7rem'
+                    }}>
+                      {t.status.replace('_', ' ')}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* REPORT ISSUE QUICK CARD */}
+        <div style={{
+          background: 'linear-gradient(135deg, #fef3c7, #fde68a)',
+          borderRadius: '12px', padding: '2rem',
+          border: '1px solid #fcd34d',
+          display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
+          textAlign: 'center'
+        }}>
+          <AlertTriangle size={40} color="#f59e0b" style={{ marginBottom: '1rem' }} />
+          <h3 style={{ margin: '0 0 0.5rem 0', color: '#92400e' }}>Something Broken?</h3>
+          <p style={{ margin: '0 0 1.5rem 0', color: '#a16207', fontSize: '0.9rem', lineHeight: 1.5 }}>
+            Report facility issues instantly. Our AI will analyze images, assess severity,
+            and route your ticket to the right technician automatically.
+          </p>
+          <button onClick={() => navigate('/report-issue')} className="btn" style={{
+            margin: 0, padding: '0.7rem 1.75rem', fontSize: '0.95rem',
+            background: '#f59e0b', color: 'white', fontWeight: 700, borderRadius: '10px',
+            display: 'flex', alignItems: 'center', gap: '0.5rem'
+          }}>
+            <AlertTriangle size={16} /> Report Issue
+          </button>
         </div>
       </div>
     </div>

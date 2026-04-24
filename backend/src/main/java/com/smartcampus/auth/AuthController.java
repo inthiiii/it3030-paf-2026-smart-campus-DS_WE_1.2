@@ -16,8 +16,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Map;
 
@@ -28,6 +26,9 @@ public class AuthController {
 
     @Value("${google.client.id}")
     private String googleClientId;
+
+    @Value("${admin.email:ihthishamirshad781@gmail.com}")
+    private String adminEmail;
 
     @Autowired
     private UserRepository userRepository;
@@ -66,10 +67,11 @@ public class AuthController {
                     newUser.setName(name);
                     newUser.setPictureUrl(pictureUrl);
                     
-                    if ("ihthishamirshad781@gmail.com".equals(email)) {
+                    // Master Admin Check
+                    if (adminEmail.equals(email)) {
                         newUser.setRole(User.Role.ADMIN);
                     } else {
-                        newUser.setRole(User.Role.USER); 
+                        newUser.setRole(User.Role.USER);
                     }
                     
                     User savedUser = userRepository.save(newUser);
@@ -79,7 +81,7 @@ public class AuthController {
                         "Welcome to Smart Campus! 🎉", 
                         "Your account has been created successfully. You can now book facilities.", 
                         Notification.NotificationType.SUCCESS,
-                        false
+                        false // Welcome notifications are not urgent
                     );
                     
                     return savedUser;
@@ -101,7 +103,7 @@ public class AuthController {
                 try {
                     Map<String, String> aiPayload = Map.of(
                         "email", user.getEmail(),
-                        "timestamp", java.time.LocalDateTime.now().toString()
+                        "timestamp", java.time.Instant.now().toString()
                     );
                     
                     Map aiResponse = restTemplate.postForObject("http://localhost:8000/api/anomaly/login", aiPayload, Map.class);
